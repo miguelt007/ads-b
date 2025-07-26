@@ -346,7 +346,7 @@
                         className: 'custom-div-icon',
                         html: `
                             <div class="aircraft-label-container" style="background-color: ${altitudeColorMap[altitudeColorClass]};">
-                                <img src="${'https://miguelt007.github.io/ads-b/plane.png'}" alt="Avião" style="transform: rotate(${aircraft.track || 0}deg);">
+                                <img src="${'https://miguelt007.github.io/ads-b/plane.png'L}" alt="Avião" style="transform: rotate(${aircraft.track || 0}deg);">
                                 <span class="flight-text">${aircraft.flight ? aircraft.flight.trim() : ''}</span>
                             </div>
                         `,
@@ -359,15 +359,15 @@
                     }).addTo(aircraftMarkers);
 
                     marker.bindPopup(`
-    <b>Voo:</b> ${ (aircraft.flight && typeof aircraft.flight === 'string') ? aircraft.flight.trim() : 'N/A' }<br>
-    <b>Registro:</b> ${aircraft.r || 'N/A'}<br>
-    <b>Modelo:</b> ${aircraft.t || 'N/A'}<br>
-    <b>Altitude:</b> ${aircraft.alt_baro || 'N/A'} ft<br>
-    <b>Rumo:</b> ${aircraft.track || 'N/A'}°<br>
-    <b>Última Posição:</b> ${aircraft.seen_pos || 'N/A'} s<br>
-    <b>GS (kts):</b> ${aircraft.gs || 'N/A'}<br>
-    <br><a href="https://flightaware.com/live/flight/${(aircraft.flight && typeof aircraft.flight === 'string') ? aircraft.flight.trim() : ''}" target="_blank">Ver no FlightAware</a>
-`);
+                        <b>Voo:</b> ${aircraft.flight ? aircraft.flight.trim() : 'N/A'}<br>
+                        <b>Registro:</b> ${aircraft.r || 'N/A'}<br>
+                        <b>Modelo:</b> ${aircraft.t || 'N/A'}<br>
+                        <b>Altitude:</b> ${aircraft.alt_baro || 'N/A'} ft<br>
+                        <b>Rumo:</b> ${aircraft.track || 'N/A'}°<br>
+                        <b>Última Posição:</b> ${aircraft.seen_pos || 'N/A'} s<br>
+                        <b>GS (kts):</b> ${aircraft.gs || 'N/A'}<br>
+                        <br><a href="https://flightaware.com/live/flight/${aircraft.flight ? aircraft.flight.trim() : ''}" target="_blank">Ver no FlightAware</a>
+                    `);
                 }
             });
 
@@ -446,43 +446,37 @@
             displayAircrafts(filteredData);
         }
 
-        async function fetchAircraftData() {
-            const tableBody = document.getElementById('aircraftTable').getElementsByTagName('tbody')[0];
-            // The table has 7 columns, so colspan should be 7
-            tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center;">Carregando dados...</td></tr>`; 
+        
+async function fetchAircraftData() {
+    const tableBody = document.getElementById('aircraftTable').getElementsByTagName('tbody')[0];
+    tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center;">Carregando dados...</td></tr>`; 
 
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'GET',
-                    headers: {
-                        'X-RapidAPI-Key': RAPIDAPI_KEY,
-                        'X-RapidAPI-Host': RAPIDAPI_HOST
-                    }
-                });
+    try {
+        // Agora, você chama a sua própria função serverless no Vercel
+        const response = await fetch('/api/get-aircraft-data'); // Caminho para a sua função serverless
 
-                if (!response.ok) {
-                    const errorResponseText = await response.text();
-                    throw new Error(`Erro HTTP! Status: ${response.status}. Detalhes: ${errorResponseText || 'Sem detalhes.'}`);
-                }
-
-                const data = await response.json();
-                console.log("Dados recebidos da API:", data);
-
-                if (data && data.ac) {
-                    allAircraftData = data.ac;
-                    applyFiltersAndSort();
-                } else {
-                    console.warn("API retornou dados em formato inesperado ou sem a propriedade 'ac':", data);
-                    allAircraftData = [];
-                    displayAircrafts([]);
-                }
-
-            } catch (error) {
-                console.error('Erro ao buscar dados da API:', error);
-                // The table has 7 columns, so colspan should be 7
-                tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: red;">Erro ao carregar dados: ${error.message}. Verifique suas credenciais da API ou a conectividade.</td></tr>`;
-            }
+        if (!response.ok) {
+            const errorResponse = await response.json(); // Assumindo que a função serverless retorna JSON em caso de erro
+            throw new Error(`Erro ao buscar dados: ${errorResponse.error || 'Erro desconhecido.'}`);
         }
+
+        const data = await response.json();
+        console.log("Dados recebidos da API:", data);
+
+        if (data && data.ac) {
+            allAircraftData = data.ac;
+            applyFiltersAndSort();
+        } else {
+            console.warn("API retornou dados em formato inesperado ou sem a propriedade 'ac':", data);
+            allAircraftData = [];
+            displayAircrafts([]);
+        }
+
+    } catch (error) {
+        console.error('Erro ao buscar dados da API:', error);
+        tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: red;">Erro ao carregar dados: ${error.message}.</td></tr>`;
+    }
+}
 
         // Função para adicionar a legenda ao mapa
         function addLegendToMap() {
