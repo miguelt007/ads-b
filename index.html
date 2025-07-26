@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Informações de Aeronaves</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        h1 {
+            color: #0056b3;
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        tr:hover {
+            background-color: #ddd;
+        }
+    </style>
+</head>
+<body>
+    <h1>Detalhes das Aeronaves</h1>
+    <table id="aircraftTable">
+        <thead>
+            <tr>
+                <th>HEX</th>
+                <th>Tipo</th>
+                <th>Voo</th>
+                <th>Registro</th>
+                <th>Modelo</th>
+                <th>Altitude (Baro)</th>
+                <th>Trajeto</th>
+                <th>Latitude</th>
+                <th>Longitude</th>
+                <th>Mensagens</th>
+                <th>Última Posição (s)</th>
+                <th>RSSI</th>
+            </tr>
+        </thead>
+        <tbody>
+            </tbody>
+    </table>
+
+    <script>
+        // Se você tivesse um arquivo JSON separado (por exemplo, data.json), você faria um fetch:
+        // fetch('data.json')
+        // .then(response => response.json())
+        // .then(data => displayAircrafts(data.ac))
+        // .catch(error => console.error('Erro ao carregar os dados:', error));
+
+        // Como você me forneceu os dados diretamente, vou usá-los assim:
+        const aircraftData = { "ac": [ { "hex": "a4c2ad", "type": "adsc", "flight": "JBU2260 ", "r": "N4058J", "t": "A21N", "alt_baro": 32000, "track": 301.65, "lat": 44.116699, "lon": -17.7167, "nic": 0, "rc": 0, "seen_pos": 341.35, "mlat": [], "tisb": [], "messages": 92289963, "seen": 341.4, "rssi": -49.5 }]};
+
+        function displayAircrafts(aircrafts) {
+            const tableBody = document.getElementById('aircraftTable').getElementsByTagName('tbody')[0];
+            aircrafts.forEach(aircraft => {
+                const row = tableBody.insertRow();
+                row.insertCell().textContent = aircraft.hex;
+                row.insertCell().textContent = aircraft.type;
+                row.insertCell().textContent = aircraft.flight;
+                row.insertCell().textContent = aircraft.r;
+                row.insertCell().textContent = aircraft.t;
+                row.insertCell().textContent = aircraft.alt_baro;
+                row.insertCell().textContent = aircraft.track;
+                row.insertCell().textContent = aircraft.lat;
+                row.insertCell().textContent = aircraft.lon;
+                row.insertCell().textContent = aircraft.messages;
+                row.insertCell().textContent = aircraft.seen_pos;
+                row.insertCell().textContent = aircraft.rssi;
+            });
+        }
+
+        // Chamar a função para exibir os dados assim que o script for carregado
+        displayAircrafts(aircraftData.ac);
+    </script>
+</body>
+</html>
