@@ -102,12 +102,11 @@
         .aircraft-label-container {
             display: flex;
             align-items: center;
-            /* background-color será definido via JS para a cor da altitude */
             border-radius: 4px;
             padding: 2px 6px;
             white-space: nowrap;
             box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-            transition: background-color 0.3s ease; /* Suaviza a mudança de cor */
+            transition: background-color 0.3s ease;
         }
         .aircraft-label-container img {
             display: block;
@@ -157,6 +156,24 @@
             content: " ▼";
             color: rgba(255, 255, 255, 0.4);
         }
+
+        /* NOVO CSS para a legenda */
+        .info.legend {
+            background: white;
+            padding: 6px 8px;
+            line-height: 18px;
+            color: #555;
+            border-radius: 5px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+        }
+        .info.legend i {
+            width: 18px;
+            height: 18px;
+            float: left;
+            margin-right: 8px;
+            opacity: 0.7;
+            border-radius: 3px; /* Bordas arredondadas para as amostras de cor */
+        }
     </style>
 </head>
 <body>
@@ -193,8 +210,8 @@
 
     <script>
         // *** IMPORTANTE: Substitua estes valores pelas suas credenciais RapidAPI ***
-        const RAPIDAPI_KEY = 'dbcf86698cmshd04b1b46934dd15p11474ejsn267bbdb81678'; // <-- Substitua AQUI
-	const RAPIDAPI_HOST = 'aircraftscatter.p.rapidapi.com'; // <-- Substitua AQUI (ex: aircraftscatter.p.rapidapi.com)
+        const RAPIDAPI_KEY = 'dbcf86698cmshd04b1b46934dd15p11474ejsn267bbdb81678';
+        const RAPIDAPI_HOST = 'aircraftscatter.p.rapidapi.com';
 
         // URL da API que você forneceu, com latitude e longitude de Oeiras
         const API_URL = 'https://aircraftscatter.p.rapidapi.com/lat/38.6892887/lon/-9.311829/';
@@ -206,6 +223,21 @@
 
         let map;
         let aircraftMarkers;
+
+        // NOVO: Definição das faixas de altitude e suas cores
+        const altitudeRanges = [
+            { threshold: 10000, label: '0 - 10,000 ft', colorClass: 'altitude-low', colorRgba: 'rgba(192, 255, 192, 0.8)' },
+            { threshold: 25000, label: '10,001 - 25,000 ft', colorClass: 'altitude-medium-low', colorRgba: 'rgba(192, 224, 255, 0.8)' },
+            { threshold: 35000, label: '25,001 - 35,000 ft', colorClass: 'altitude-medium-high', colorRgba: 'rgba(160, 200, 255, 0.8)' },
+            { threshold: Infinity, label: '> 35,000 ft', colorClass: 'altitude-high', colorRgba: 'rgba(128, 179, 255, 0.8)' },
+            { threshold: null, label: 'Altitude Desconhecida', colorClass: 'altitude-unknown', colorRgba: 'rgba(240, 240, 240, 0.8)' }
+        ];
+
+        // NOVO: Mapeia as classes de altitude para as cores RGBA para uso no JS
+        const altitudeColorMap = {};
+        altitudeRanges.forEach(range => {
+            altitudeColorMap[range.colorClass] = range.colorRgba;
+        });
 
         if (document.getElementById('map')) {
             map = L.map('map').setView([38.6892887, -9.311829], 10);
@@ -222,7 +254,6 @@
                 attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
             });
 
-            // Lembre-se de substituir SUA_CHAVE_DE_API_DO_STADIA_AQUI pela sua chave real do Stadia Maps
             const stadiaTerrain = L.tileLayer('https://tiles.stadiamaps.com/tiles/stamen_terrain/{z}/{x}/{y}{r}.png?api_key=3f0a9b17-f599-4060-9407-966d99d13a94', {
                 minZoom: 0,
                 maxZoom: 18,
@@ -242,22 +273,21 @@
             console.error("Elemento 'map' não encontrado. Certifique-se de que a div com id='map' existe no HTML.");
         }
 
-        const AIRCRAFT_ICON_URL = 'https://miguelt007.github.io/ads-b/plane.png'; // Substitua com o seu URL!
+        const AIRCRAFT_ICON_URL = 'https://miguelt007.github.io/ads-b/plane.png';
 
-        // NOVO: Função para obter a classe de cor da altitude
+        // Função para obter a classe de cor da altitude
         function getAltitudeColorClass(altitude) {
             if (altitude === null || isNaN(altitude)) {
                 return 'altitude-unknown';
             }
-            if (altitude <= 10000) {
-                return 'altitude-low';
-            } else if (altitude <= 25000) {
-                return 'altitude-medium-low';
-            } else if (altitude <= 35000) {
-                return 'altitude-medium-high';
-            } else {
-                return 'altitude-high';
+            // Encontra a primeira faixa cujo threshold é maior ou igual à altitude
+            for (const range of altitudeRanges) {
+                if (range.threshold === null) continue; // Pula o desconhecido
+                if (altitude <= range.threshold) {
+                    return range.colorClass;
+                }
             }
+            return 'altitude-unknown'; // Caso não caia em nenhuma faixa definida (deveria ser coberto por Infinity)
         }
 
         // Função para exibir os dados na tabela e no mapa (agora recebe os dados já filtrados/ordenados)
@@ -289,30 +319,11 @@
                 row.classList.add(altitudeColorClass); // Adiciona a classe de cor à linha da tabela
 
                 if (map && aircraft.lat && aircraft.lon) {
-                    const iconHtml = `
-                        <div class="aircraft-label-container" style="background-color: var(--${altitudeColorClass}-color);">
-                            <img src="${AIRCRAFT_ICON_URL}" alt="Avião" style="transform: rotate(${aircraft.track || 0}deg);">
-                            <span class="flight-text">${aircraft.flight ? aircraft.flight.trim() : ''}</span>
-                        </div>
-                    `;
-
-                    // Definir as cores no CSS e usar variáveis CSS para o JS
-                    // Para o JS poder usar as cores definidas no CSS, precisamos de um pequeno truque
-                    // Ou, podemos definir as cores diretamente no JS e usá-las em ambos os locais.
-                    // Vou usar a segunda opção para simplificar.
-                    const colorMap = {
-                        'altitude-low': 'rgba(192, 255, 192, 0.8)', /* Verde claro mais opaco */
-                        'altitude-medium-low': 'rgba(192, 224, 255, 0.8)', /* Azul claro mais opaco */
-                        'altitude-medium-high': 'rgba(160, 200, 255, 0.8)', /* Azul médio mais opaco */
-                        'altitude-high': 'rgba(128, 179, 255, 0.8)', /* Azul escuro mais opaco */
-                        'altitude-unknown': 'rgba(240, 240, 240, 0.8)' /* Cinza claro mais opaco */
-                    };
-
                     const customAircraftDivIcon = L.divIcon({
                         className: 'custom-div-icon',
                         html: `
-                            <div class="aircraft-label-container" style="background-color: ${colorMap[altitudeColorClass]};">
-                                <img src="${AIRCRAFT_ICON_URL}" alt="Avião" style="transform: rotate(${aircraft.track || 0}deg);">
+                            <div class="aircraft-label-container" style="background-color: ${altitudeColorMap[altitudeColorClass]};">
+                                <img src="${'https://miguelt007.github.io/ads-b/plane.png'}" alt="Avião" style="transform: rotate(${aircraft.track || 0}deg);">
                                 <span class="flight-text">${aircraft.flight ? aircraft.flight.trim() : ''}</span>
                             </div>
                         `,
@@ -451,12 +462,33 @@
             }
         }
 
+        // NOVO: Função para adicionar a legenda ao mapa
+        function addLegendToMap() {
+            const legend = L.control({ position: 'bottomright' }); // Posição da legenda no mapa
+
+            legend.onAdd = function (map) {
+                const div = L.DomUtil.create('div', 'info legend');
+                div.innerHTML += '<h4>Altitude (ft)</h4>'; // Título da legenda
+
+                // Itera sobre as faixas de altitude e cria itens na legenda
+                for (let i = 0; i < altitudeRanges.length; i++) {
+                    const range = altitudeRanges[i];
+                    div.innerHTML +=
+                        '<i style="background:' + range.colorRgba + '"></i> ' + // Amostra de cor
+                        range.label + '<br>'; // Texto da faixa
+                }
+                return div;
+            };
+
+            legend.addTo(map);
+        }
+
         // Chamar as funções quando a página carregar
         if (map) {
             fetchAircraftData();
             setupTableFilter();
             setupTableSorting();
-            // ATIVADO: Atualiza os dados a cada 30 segundos (30000 milissegundos)
+            addLegendToMap(); // NOVO: Adiciona a legenda ao mapa
             setInterval(fetchAircraftData, 30000);
         }
     </script>
