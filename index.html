@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Informações de Aeronaves com Mapa</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-providers@1.13.0/leaflet-providers.css"/>
+
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -83,32 +85,27 @@
             }
         }
 
-        /* NOVO CSS para o ícone de avião com texto */
-        /* Contenho o ícone e o texto. Não é este que irá rodar. */
+        /* CSS para o ícone de avião com texto */
         .aircraft-label-container {
             display: flex;
             align-items: center;
             background-color: rgba(255, 255, 255, 0.8);
             border-radius: 4px;
-            padding: 2px 6px; /* Aumentado o padding horizontal */
+            padding: 2px 6px;
             white-space: nowrap;
             box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-            /* O transform-origin aqui é para este container, que não vai rodar */
         }
-        /* Apenas a imagem do avião vai rodar */
         .aircraft-label-container img {
             display: block;
             width: 24px;
             height: 24px;
             margin-right: 4px;
             transition: transform 0.3s ease-out; /* Suaviza a rotação do avião */
-            /* O transform-origin para a rotação da imagem será definido no JS via style, para L.rotatedMarker */
         }
         .aircraft-label-container .flight-text {
             font-size: 0.8em;
             font-weight: bold;
             color: #333;
-            /* Este texto não vai rodar, pois a rotação será aplicada apenas à imagem */
         }
     </style>
 </head>
@@ -137,13 +134,12 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-rotatedmarker@0.2.0/leaflet.rotatedMarker.js"></script>
+    <script src="https://unpkg.com/leaflet-providers@1.13.0/leaflet-providers.js"></script>
 
     <script>
         // *** IMPORTANTE: Substitua estes valores pelas suas credenciais RapidAPI ***
         const RAPIDAPI_KEY = 'dbcf86698cmshd04b1b46934dd15p11474ejsn267bbdb81678'; // <-- Substitua AQUI
 	const RAPIDAPI_HOST = 'aircraftscatter.p.rapidapi.com'; // <-- Substitua AQUI (ex: aircraftscatter.p.rapidapi.com)
-
 
         // URL da API que você forneceu, com latitude e longitude de Oeiras
         const API_URL = 'https://aircraftscatter.p.rapidapi.com/lat/38.6892887/lon/-9.311829/';
@@ -155,12 +151,42 @@
         if (document.getElementById('map')) {
             map = L.map('map').setView([38.6892887, -9.311829], 10); // Centraliza em Oeiras com zoom apropriado
 
-            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            aircraftMarkers = L.featureGroup().addTo(map);
+
+            // --- Definição das Camadas Base ---
+            const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            }).addTo(map);
+            });
 
-            aircraftMarkers = L.featureGroup().addTo(map);
+            // Adiciona o OSM como camada padrão ao carregar
+            osm.addTo(map);
+
+            // Exemplo de Camada de Satélite (Esri World Imagery)
+            const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+            });
+
+            // Exemplo de Camada de Terreno (Stadia Stamen Terrain)
+            // Nota: Stadia requer uma chave de API para uso em produção, mas pode funcionar sem para testes limitados.
+            // Para uso comercial ou intensivo, é preciso se registrar em https://stadiamaps.com/
+            const stadiaTerrain = L.tileLayer('https://tiles.stadiamaps.com/tiles/stamen_terrain/{z}/{x}/{y}{r}.png', {
+                minZoom: 0,
+                maxZoom: 18,
+                attribution: '&copy; <a href="https://stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://stamen.com/" target="_blank">Stamen Design</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                ext: 'png'
+            });
+
+            // Objeto com as camadas base para o controle de camadas
+            const baseLayers = {
+                "OpenStreetMap": osm,
+                "Satélite (Esri)": esriSat,
+                "Terreno (Stadia)": stadiaTerrain
+            };
+
+            // Adiciona o controle de camadas ao mapa
+            L.control.layers(baseLayers).addTo(map);
+
         } else {
             console.error("Elemento 'map' não encontrado. Certifique-se de que a div com id='map' existe no HTML.");
         }
@@ -194,8 +220,6 @@
                 row.insertCell().textContent = aircraft.alt_baro || 'N/A';
 
                 if (map && aircraft.lat && aircraft.lon) {
-                    // Crie o conteúdo HTML para o divIcon
-                    // A rotação será aplicada diretamente na imagem via CSS transform no JS
                     const iconHtml = `
                         <div class="aircraft-label-container">
                             <img src="${'https://miguelt007.github.io/ads-b/plane.png'}" alt="Avião" style="transform: rotate(${aircraft.track || 0}deg);">
@@ -203,16 +227,13 @@
                         </div>
                     `;
 
-                    // Crie o L.divIcon
                     const customAircraftDivIcon = L.divIcon({
-                        className: 'custom-div-icon', // Uma classe para o Leaflet envolver (pode ser vazia, mas necessária)
+                        className: 'custom-div-icon',
                         html: iconHtml,
-                        iconSize: [80, 24], // Ajustado para maior largura para acomodar texto (ajuste conforme o texto e fonte)
-                        iconAnchor: [40, 12] // O centro do ícone (metade do iconSize)
+                        iconSize: [80, 24],
+                        iconAnchor: [40, 12]
                     });
 
-                    // Use L.marker com o custom divIcon. O plugin RotatedMarker NÃO é mais necessário aqui,
-                    // pois a rotação da imagem é feita via CSS diretamente no HTML do divIcon.
                     const marker = L.marker([aircraft.lat, aircraft.lon], {
                         icon: customAircraftDivIcon
                     }).addTo(aircraftMarkers);
