@@ -194,7 +194,7 @@
                         <th data-column="hex">HEX <span class="sort-arrow"></span></th>
 			<th data-column="flight">Voo <span class="sort-arrow"></span></th>
 			<th data-column="r">Registro <span class="sort-arrow"></span></th>
-                        <th data-column="alt_baro">Altitude (Baro) <span class="sort-arrow"></span></th>
+                        <th data-column="alt_baro">Alt.(ft) <span class="sort-arrow"></span></th>
 			<th data-column="gs">GS (kt) <span class="sort-arrow"></span></th> <th data-column="alt_baro">Altitude (Baro) <span class="sort-arrow"></span></th>
                         <th data-column="t">Modelo <span class="sort-arrow"></span></th>
 			<th data-column="type">Source <span class="sort-arrow"></span></th>
@@ -301,7 +301,7 @@
             if (!aircraftsToDisplay || aircraftsToDisplay.length === 0) {
                 const row = tableBody.insertRow();
                 const cell = row.insertCell();
-                cell.colSpan = 6;
+                cell.colSpan = 7;
                 cell.textContent = "Nenhuma aeronave encontrada ou corresponde ao filtro.";
                 cell.style.textAlign = "center";
                 cell.style.color = "orange";
