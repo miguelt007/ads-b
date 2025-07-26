@@ -107,6 +107,20 @@
             font-weight: bold;
             color: #333;
         }
+
+        /* Novo CSS para o filtro */
+        .filter-container {
+            margin-bottom: 15px;
+            text-align: right; /* Alinha o campo de pesquisa à direita */
+        }
+        .filter-container input[type="text"] {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 100%; /* Ocupa a largura total do container */
+            max-width: 300px; /* Limita a largura máxima para não ficar muito grande */
+            box-sizing: border-box; /* Inclui padding e border na largura */
+        }
     </style>
 </head>
 <body>
@@ -116,6 +130,11 @@
         <div id="map"></div>
         <div class="table-container">
             <h2>Dados da Tabela</h2>
+
+            <div class="filter-container">
+                <input type="text" id="tableFilter" placeholder="Filtrar tabela...">
+            </div>
+
             <table id="aircraftTable">
                 <thead>
                     <tr>
@@ -162,14 +181,10 @@
             // Adiciona o OSM como camada padrão ao carregar
             osm.addTo(map);
 
-            // Exemplo de Camada de Satélite (Esri World Imagery)
             const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                 attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
             });
 
-            // Exemplo de Camada de Terreno (Stadia Stamen Terrain)
-            // Nota: Stadia requer uma chave de API para uso em produção, mas pode funcionar sem para testes limitados.
-            // Para uso comercial ou intensivo, é preciso se registrar em https://stadiamaps.com/
             const stadiaTerrain = L.tileLayer('https://tiles.stadiamaps.com/tiles/stamen_terrain/{z}/{x}/{y}{r}.png', {
                 minZoom: 0,
                 maxZoom: 18,
@@ -177,14 +192,12 @@
                 ext: 'png'
             });
 
-            // Objeto com as camadas base para o controle de camadas
             const baseLayers = {
                 "OpenStreetMap": osm,
                 "Satélite (Esri)": esriSat,
                 "Terreno (Stadia)": stadiaTerrain
             };
 
-            // Adiciona o controle de camadas ao mapa
             L.control.layers(baseLayers).addTo(map);
 
         } else {
@@ -192,7 +205,7 @@
         }
 
         // URL do ícone de avião (use o URL da sua imagem no GitHub)
-        const AIRCRAFT_ICON_URL = 'https://raw.githubusercontent.com/miguelt007/ads-b/main/images/airplane.png'; // Substitua com o seu URL!
+        const AIRCRAFT_ICON_URL = ''https://miguelt007.github.io/ads-b/plane.png''; // Substitua com o seu URL!
 
         // 2. Função para exibir os dados na tabela e no mapa
         function displayAircrafts(aircrafts) {
@@ -222,7 +235,7 @@
                 if (map && aircraft.lat && aircraft.lon) {
                     const iconHtml = `
                         <div class="aircraft-label-container">
-                            <img src="${'https://miguelt007.github.io/ads-b/plane.png'}" alt="Avião" style="transform: rotate(${aircraft.track || 0}deg);">
+                            <img src="${AIRCRAFT_ICON_URL}" alt="Avião" style="transform: rotate(${aircraft.track || 0}deg);">
                             <span class="flight-text">${aircraft.flight ? aircraft.flight.trim() : ''}</span>
                         </div>
                     `;
@@ -260,6 +273,36 @@
             }
         }
 
+        // NOVO: Função para configurar o filtro da tabela
+        function setupTableFilter() {
+            const input = document.getElementById("tableFilter");
+            const table = document.getElementById("aircraftTable");
+            const tr = table.getElementsByTagName("tr");
+
+            input.addEventListener("keyup", function() {
+                const filter = input.value.toUpperCase(); // Converte para maiúsculas para comparação sem distinção de maiúsculas/minúsculas
+
+                // Começa do índice 1 para ignorar o cabeçalho da tabela (thead)
+                for (let i = 1; i < tr.length; i++) {
+                    let rowVisible = false;
+                    const td = tr[i].getElementsByTagName("td"); // Obtém todas as células da linha
+
+                    // Itera sobre todas as células da linha
+                    for (let j = 0; j < td.length; j++) {
+                        const cell = td[j];
+                        if (cell) {
+                            const cellText = cell.textContent || cell.innerText; // Obtém o texto da célula
+                            if (cellText.toUpperCase().indexOf(filter) > -1) {
+                                rowVisible = true;
+                                break; // Se encontrar o texto em uma célula, a linha é visível
+                            }
+                        }
+                    }
+                    tr[i].style.display = rowVisible ? "" : "none"; // Mostra ou esconde a linha
+                }
+            });
+        }
+
         // 3. Função para buscar dados da API
         async function fetchAircraftData() {
             const tableBody = document.getElementById('aircraftTable').getElementsByTagName('tbody')[0];
@@ -275,31 +318,4 @@
                 });
 
                 if (!response.ok) {
-                    const errorResponseText = await response.text();
-                    throw new Error(`Erro HTTP! Status: ${response.status}. Detalhes: ${errorResponseText || 'Sem detalhes.'}`);
-                }
-
-                const data = await response.json();
-                console.log("Dados recebidos da API:", data);
-
-                if (data && data.ac) {
-                    displayAircrafts(data.ac);
-                } else {
-                    console.warn("API retornou dados em formato inesperado ou sem a propriedade 'ac':", data);
-                    displayAircrafts([]);
-                }
-
-            } catch (error) {
-                console.error('Erro ao buscar dados da API:', error);
-                tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: red;">Erro ao carregar dados: ${error.message}. Verifique suas credenciais da API ou a conectividade.</td></tr>`;
-            }
-        }
-
-        // Chamar a função para buscar dados da API quando a página carregar
-        if (map) {
-            fetchAircraftData();
-            // setInterval(fetchAircraftData, 30000); // Para atualizar dados periodicamente
-        }
-    </script>
-</body>
-</html>
+                    const errorResponse
