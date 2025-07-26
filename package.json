@@ -1,0 +1,12 @@
+{
+  "name": "nome-do-seu-projeto",
+  "version": "1.0.0",
+  "description": "Um mapa de aeronaves com dados da RapidAPI",
+  "type": "module", // Garante que o Vercel trata como módulo ES
+  "dependencies": {
+    "node-fetch": "^2.6.7" // <-- ESTA LINHA É CRÍTICA!
+  },
+  "scripts": {
+    "start": "node api/get-aircraft-data.js"
+  }
+}
