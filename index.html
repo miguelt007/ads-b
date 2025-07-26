@@ -192,11 +192,11 @@
                 <thead>
                     <tr>
                         <th data-column="hex">HEX <span class="sort-arrow"></span></th>
-			<th data-column="flight">Voo <span class="sort-arrow"></span></th>
+			<th data-column="flight">Callsign <span class="sort-arrow"></span></th>
 			<th data-column="r">Registro <span class="sort-arrow"></span></th>
+			<th data-column="t">Modelo <span class="sort-arrow"></span></th>
                         <th data-column="alt_baro">Alt.(ft) <span class="sort-arrow"></span></th>
-			<th data-column="gs">GS (kt) <span class="sort-arrow"></span></th>
-                        <th data-column="t">Modelo <span class="sort-arrow"></span></th>
+			<th data-column="gs">GS (kt) <span class="sort-arrow"></span></th>                        
 			<th data-column="type">Source <span class="sort-arrow"></span></th>                        
                     </tr>
                 </thead>
@@ -314,9 +314,9 @@
                 row.insertCell().textContent = aircraft.hex || 'N/A';
                 row.insertCell().textContent = aircraft.flight ? aircraft.flight.trim() : 'N/A';
 		row.insertCell().textContent = aircraft.r || 'N/A';
-		row.insertCell().textContent = aircraft.alt_baro || 'N/A';
-		row.insertCell().textContent = aircraft.gs || 'N/A';
 		row.insertCell().textContent = aircraft.t || 'N/A';
+		row.insertCell().textContent = aircraft.alt_baro || 'N/A';
+		row.insertCell().textContent = aircraft.gs || 'N/A';		
                 row.insertCell().textContent = aircraft.type || 'N/A';
                 row.classList.add(altitudeColorClass); // Adiciona a classe de cor à linha da tabela
 
@@ -342,11 +342,10 @@
                         <b>Registro:</b> ${aircraft.r || 'N/A'}<br>
                         <b>Modelo:</b> ${aircraft.t || 'N/A'}<br>
                         <b>Altitude:</b> ${aircraft.alt_baro || 'N/A'} ft<br>
-                        <b>Trajeto:</b> ${aircraft.track || 'N/A'}°<br>
+                        <b>Rumo:</b> ${aircraft.track || 'N/A'}°<br>
                         <b>Última Posição:</b> ${aircraft.seen_pos || 'N/A'} s<br>
-                        <b>GS:</b> ${aircraft.gs || 'N/A'}<br>
-                        <br>
-                        <a href="https://flightaware.com/live/flight/${aircraft.flight ? aircraft.flight.trim() : ''}" target="_blank">Ver no FlightAware</a>
+                        <b>GS (kts):</b> ${aircraft.gs || 'N/A'}<br>
+                        <br><a href="https://flightaware.com/live/flight/${aircraft.flight ? aircraft.flight.trim() : ''}" target="_blank">Ver no FlightAware</a>
                     `);
                 }
             });
