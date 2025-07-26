@@ -82,6 +82,29 @@
                 padding: 6px;
             }
         }
+
+        /* Novo CSS para o ícone de avião com texto */
+        .airplane-marker {
+            display: flex; /* Permite colocar a imagem e o texto lado a lado */
+            align-items: center; /* Alinha verticalmente no centro */
+            background-color: rgba(255, 255, 255, 0.8); /* Fundo semi-transparente para o texto */
+            border-radius: 4px;
+            padding: 2px 4px;
+            white-space: nowrap;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+            transform-origin: center center; /* Importante para a rotação */
+        }
+        .airplane-marker img {
+            display: block; /* Remove espaço extra abaixo da imagem */
+            width: 24px; /* Tamanho da imagem do avião */
+            height: 24px;
+            margin-right: 4px; /* Espaço entre o ícone e o texto */
+        }
+        .airplane-marker .flight-text {
+            font-size: 0.8em; /* Tamanho da fonte do texto do voo */
+            font-weight: bold;
+            color: #333;
+        }
     </style>
 </head>
 <body>
@@ -114,7 +137,7 @@
     <script>
         // *** IMPORTANTE: Substitua estes valores pelas suas credenciais RapidAPI ***
         const RAPIDAPI_KEY = 'dbcf86698cmshd04b1b46934dd15p11474ejsn267bbdb81678'; // <-- Substitua AQUI
-        const RAPIDAPI_HOST = 'aircraftscatter.p.rapidapi.com'; // <-- Substitua AQUI (ex: aircraftscatter.p.rapidapi.com)
+	const RAPIDAPI_HOST = 'aircraftscatter.p.rapidapi.com'; // <-- Substitua AQUI (ex: aircraftscatter.p.rapidapi.com)
 
         // URL da API que você forneceu, com latitude e longitude de Oeiras
         const API_URL = 'https://aircraftscatter.p.rapidapi.com/lat/38.6892887/lon/-9.311829/';
@@ -136,18 +159,14 @@
             console.error("Elemento 'map' não encontrado. Certifique-se de que a div com id='map' existe no HTML.");
         }
 
-        // Definir um ícone de avião personalizado
-        const aircraftIcon = L.icon({
-            iconUrl: 'https://miguelt007.github.io/ads-b/plane.png', // Exemplo: ícone de avião simples (apontando para cima)
-            iconSize: [24, 24], // Tamanho do ícone
-            iconAnchor: [12, 12] // Ponto do ícone que será o centro da sua coordenada (metade da largura e altura)
-        });
+        // URL do ícone de avião (use o URL da sua imagem no GitHub)
+        const AIRCRAFT_ICON_URL = 'https://miguelt007.github.io/ads-b/plane.png'; // Substitua com o seu URL!
 
         // 2. Função para exibir os dados na tabela e no mapa
         function displayAircrafts(aircrafts) {
             const tableBody = document.getElementById('aircraftTable').getElementsByTagName('tbody')[0];
-            tableBody.innerHTML = ''; // Limpa a tabela antes de adicionar novos dados
-            aircraftMarkers.clearLayers(); // Limpa os marcadores existentes no mapa
+            tableBody.innerHTML = '';
+            aircraftMarkers.clearLayers();
 
             if (!aircrafts || aircrafts.length === 0) {
                 const row = tableBody.insertRow();
@@ -155,7 +174,7 @@
                 cell.colSpan = 6;
                 cell.textContent = "Nenhuma aeronave encontrada na área ou dados indisponíveis.";
                 cell.style.textAlign = "center";
-                cell.style.color = "orange"; // Cor para indicar que não há dados
+                cell.style.color = "orange";
                 return;
             }
 
@@ -163,20 +182,32 @@
                 const row = tableBody.insertRow();
                 row.insertCell().textContent = aircraft.hex || 'N/A';
                 row.insertCell().textContent = aircraft.type || 'N/A';
-                row.insertCell().textContent = aircraft.flight || 'N/A';
+                row.insertCell().textContent = aircraft.flight ? aircraft.flight.trim() : 'N/A'; // Adicionado trim() para limpar espaços
                 row.insertCell().textContent = aircraft.r || 'N/A';
                 row.insertCell().textContent = aircraft.t || 'N/A';
                 row.insertCell().textContent = aircraft.alt_baro || 'N/A';
 
                 if (map && aircraft.lat && aircraft.lon) {
+                    // Crie um L.divIcon com a imagem e o texto
+                    const customAircraftDivIcon = L.divIcon({
+                        className: 'airplane-marker', // Classe CSS para estilizar o div
+                        html: `
+                            <img src="${AIRCRAFT_ICON_URL}" alt="Avião">
+                            <span class="flight-text">${aircraft.flight ? aircraft.flight.trim() : ''}</span>
+                        `,
+                        iconSize: [60, 24], // Largura e altura aproximadas do div (ajuste conforme necessário)
+                        iconAnchor: [30, 12] // Ponto de âncora (metade da largura, metade da altura)
+                    });
+
+                    // Use L.marker com o custom divIcon e o plugin RotatedMarker
                     const marker = L.marker([aircraft.lat, aircraft.lon], {
-                        icon: aircraftIcon,
+                        icon: customAircraftDivIcon,
                         rotationAngle: aircraft.track || 0,
                         rotationOrigin: 'center center'
                     }).addTo(aircraftMarkers);
 
                     marker.bindPopup(`
-                        <b>Voo:</b> ${aircraft.flight || 'N/A'}<br>
+                        <b>Voo:</b> ${aircraft.flight ? aircraft.flight.trim() : 'N/A'}<br>
                         <b>Registro:</b> ${aircraft.r || 'N/A'}<br>
                         <b>Modelo:</b> ${aircraft.t || 'N/A'}<br>
                         <b>Altitude:</b> ${aircraft.alt_baro || 'N/A'} ft<br>
@@ -200,7 +231,7 @@
         // 3. Função para buscar dados da API
         async function fetchAircraftData() {
             const tableBody = document.getElementById('aircraftTable').getElementsByTagName('tbody')[0];
-            tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center;">Carregando dados...</td></tr>`; // Mensagem de carregamento
+            tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center;">Carregando dados...</td></tr>`;
 
             try {
                 const response = await fetch(API_URL, {
@@ -212,18 +243,18 @@
                 });
 
                 if (!response.ok) {
-                    const errorResponseText = await response.text(); // Tenta ler o corpo da resposta de erro
+                    const errorResponseText = await response.text();
                     throw new Error(`Erro HTTP! Status: ${response.status}. Detalhes: ${errorResponseText || 'Sem detalhes.'}`);
                 }
 
                 const data = await response.json();
-                console.log("Dados recebidos da API:", data); // AINDA PARA DEPURAR NA CONSOLA
+                console.log("Dados recebidos da API:", data);
 
                 if (data && data.ac) {
                     displayAircrafts(data.ac);
                 } else {
                     console.warn("API retornou dados em formato inesperado ou sem a propriedade 'ac':", data);
-                    displayAircrafts([]); // Exibe mensagem "nenhuma aeronave"
+                    displayAircrafts([]);
                 }
 
             } catch (error) {
@@ -235,8 +266,7 @@
         // Chamar a função para buscar dados da API quando a página carregar
         if (map) {
             fetchAircraftData();
-            // Para atualizar os dados periodicamente (descomente para ativar)
-            setInterval(fetchAircraftData, 30000); // A cada 30 segundos
+            // setInterval(fetchAircraftData, 30000); // Para atualizar dados periodicamente
         }
     </script>
 </body>
