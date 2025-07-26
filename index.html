@@ -12,9 +12,9 @@
             padding: 20px;
             background-color: #f4f4f4;
             color: #333;
-            display: flex; /* Usar flexbox para o layout */
-            flex-direction: column; /* Organizar itens em coluna inicialmente */
-            min-height: 100vh; /* Ocupar a altura total da viewport */
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
             box-sizing: border-box;
         }
         h1 {
@@ -23,27 +23,27 @@
             margin-bottom: 20px;
         }
         .container {
-            display: flex; /* Container para mapa e tabela */
-            flex-grow: 1; /* Permite que o container ocupe o espaço restante */
-            gap: 20px; /* Espaçamento entre os elementos */
-            flex-wrap: wrap; /* Permite que os itens quebrem para a próxima linha em telas menores */
+            display: flex;
+            flex-grow: 1;
+            gap: 20px;
+            flex-wrap: wrap;
         }
         #map {
-            flex: 2; /* Mapa ocupa 2/3 do espaço disponível */
-            height: 600px; /* Altura fixa para o mapa */
+            flex: 2;
+            height: 600px;
             border: 1px solid #ddd;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            min-width: 300px; /* Largura mínima para o mapa */
+            min-width: 300px;
         }
         .table-container {
-            flex: 1; /* Tabela ocupa 1/3 do espaço disponível */
+            flex: 1;
             background-color: #fff;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            overflow-x: auto; /* Permite scroll horizontal na tabela se necessário */
-            min-width: 300px; /* Largura mínima para a tabela */
+            overflow-x: auto;
+            min-width: 300px;
         }
         table {
             width: 100%;
@@ -66,15 +66,13 @@
         tr:hover {
             background-color: #ddd;
         }
-
-        /* Responsividade para telas menores */
         @media (max-width: 900px) {
             .container {
-                flex-direction: column; /* Empilha mapa e tabela em telas menores */
+                flex-direction: column;
             }
             #map {
                 width: 100%;
-                height: 400px; /* Altura menor para o mapa em telas menores */
+                height: 400px;
             }
             .table-container {
                 width: 100%;
@@ -115,37 +113,69 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         // Dados das aeronaves (você pode substituir isso por uma chamada fetch para uma API real)
-        const aircraftData = { "ac": [ { "hex": "a4c2ad", "type": "adsc", "flight": "JBU2260 ", "r": "N4058J", "t": "A21N", "alt_baro": 32000, "track": 301.65, "lat": 44.116699, "lon": -17.7167, "nic": 0, "rc": 0, "seen_pos": 341.35, "mlat": [], "tisb": [], "messages": 92289963, "seen": 341.4, "rssi": -49.5 }]};
+        const aircraftData = {
+            "ac": [
+                { "hex": "a4c2ad", "type": "adsc", "flight": "JBU2260 ", "r": "N4058J", "t": "A21N", "alt_baro": 32000, "track": 301.65, "lat": 44.116699, "lon": -17.7167, "nic": 0, "rc": 0, "seen_pos": 341.35, "mlat": [], "tisb": [], "messages": 92289963, "seen": 341.4, "rssi": -49.5 }
+            ]
+        };
 
         // 1. Inicializar o Mapa Leaflet
-        const map = L.map('map').setView([0, 0], 2); // Centraliza em 0,0 com zoom 2 (mundial)
+        // Verifica se o elemento 'map' existe antes de inicializar o mapa
+        if (document.getElementById('map')) {
+            const map = L.map('map').setView([0, 0], 2); // Centraliza em 0,0 com zoom 2 (mundial)
 
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        }).addTo(map);
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            }).addTo(map);
 
-        // Grupo de camadas para os marcadores de aeronaves
-        const aircraftMarkers = L.layerGroup().addTo(map);
+            // Grupo de camadas para os marcadores de aeronaves
+            const aircraftMarkers = L.layerGroup().addTo(map);
 
-        // 2. Função para exibir os dados na tabela e no mapa
-        function displayAircrafts(aircrafts) {
-            const tableBody = document.getElementById('aircraftTable').getElementsByTagName('tbody')[0];
-            tableBody.innerHTML = ''; // Limpa a tabela antes de adicionar novos dados
-            aircraftMarkers.clearLayers(); // Limpa os marcadores existentes no mapa
+            // 2. Função para exibir os dados na tabela e no mapa
+            function displayAircrafts(aircrafts) {
+                const tableBody = document.getElementById('aircraftTable').getElementsByTagName('tbody')[0];
+                tableBody.innerHTML = ''; // Limpa a tabela antes de adicionar novos dados
+                aircraftMarkers.clearLayers(); // Limpa os marcadores existentes no mapa
 
-            aircrafts.forEach(aircraft => {
-                // Adicionar linha à tabela
-                const row = tableBody.insertRow();
-                row.insertCell().textContent = aircraft.hex || 'N/A';
-                row.insertCell().textContent = aircraft.type || 'N/A';
-                row.insertCell().textContent = aircraft.flight || 'N/A';
-                row.insertCell().textContent = aircraft.r || 'N/A';
-                row.insertCell().textContent = aircraft.t || 'N/A';
-                row.insertCell().textContent = aircraft.alt_baro || 'N/A';
-                row.insertCell().textContent = aircraft.track || 'N/A';
-                row.insertCell().textContent = aircraft.lat || 'N/A';
-                row.insertCell().textContent = aircraft.lon || 'N/A';
-                row.insertCell().textContent = aircraft.messages || 'N/A';
-                row.insertCell().textContent = aircraft.seen_pos || 'N/A';
-                row.insertCell().textContent = aircraft.rssi || 'N/
+                aircrafts.forEach(aircraft => {
+                    // Adicionar linha à tabela
+                    const row = tableBody.insertRow();
+                    row.insertCell().textContent = aircraft.hex || 'N/A';
+                    row.insertCell().textContent = aircraft.type || 'N/A';
+                    row.insertCell().textContent = aircraft.flight || 'N/A';
+                    row.insertCell().textContent = aircraft.r || 'N/A';
+                    row.insertCell().textContent = aircraft.t || 'N/A';
+                    row.insertCell().textContent = aircraft.alt_baro || 'N/A';
+                    row.insertCell().textContent = aircraft.track || 'N/A';
+                    row.insertCell().textContent = aircraft.lat || 'N/A';
+                    row.insertCell().textContent = aircraft.lon || 'N/A';
+                    row.insertCell().textContent = aircraft.messages || 'N/A';
+                    row.insertCell().textContent = aircraft.seen_pos || 'N/A';
+                    row.insertCell().textContent = aircraft.rssi || 'N/A';
+
+                    // Adicionar marcador ao mapa, se lat e lon estiverem disponíveis
+                    if (aircraft.lat && aircraft.lon) {
+                        const marker = L.marker([aircraft.lat, aircraft.lon]).addTo(aircraftMarkers);
+                        marker.bindPopup(`
+                            <b>Voo:</b> ${aircraft.flight || 'N/A'}<br>
+                            <b>Registro:</b> ${aircraft.r || 'N/A'}<br>
+                            <b>Altitude:</b> ${aircraft.alt_baro || 'N/A'} ft
+                        `);
+                    }
+                });
+
+                // Ajustar o mapa para mostrar todos os marcadores, se houver algum
+                if (aircraftMarkers.getLayers().length > 0) {
+                    map.fitBounds(aircraftMarkers.getBounds());
+                }
+            }
+
+            // Chamar a função para exibir os dados assim que o script for carregado
+            displayAircrafts(aircraftData.ac);
+        } else {
+            console.error("Elemento 'map' não encontrado. Certifique-se de que a div com id='map' existe no HTML.");
+        }
+    </script>
+</body>
+</html>
