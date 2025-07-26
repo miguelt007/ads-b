@@ -120,7 +120,6 @@
         };
 
         // 1. Inicializar o Mapa Leaflet
-        // Verifica se o elemento 'map' existe antes de inicializar o mapa
         if (document.getElementById('map')) {
             const map = L.map('map').setView([0, 0], 2); // Centraliza em 0,0 com zoom 2 (mundial)
 
@@ -129,8 +128,8 @@
                 attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             }).addTo(map);
 
-            // Grupo de camadas para os marcadores de aeronaves
-            const aircraftMarkers = L.layerGroup().addTo(map);
+            // CORREÇÃO AQUI: Usar L.featureGroup() em vez de L.layerGroup()
+            const aircraftMarkers = L.featureGroup().addTo(map);
 
             // 2. Função para exibir os dados na tabela e no mapa
             function displayAircrafts(aircrafts) {
@@ -166,6 +165,7 @@
                 });
 
                 // Ajustar o mapa para mostrar todos os marcadores, se houver algum
+                // Esta linha agora deve funcionar corretamente com L.featureGroup
                 if (aircraftMarkers.getLayers().length > 0) {
                     map.fitBounds(aircraftMarkers.getBounds());
                 }
