@@ -83,27 +83,32 @@
             }
         }
 
-        /* Novo CSS para o ícone de avião com texto */
-        .airplane-marker {
-            display: flex; /* Permite colocar a imagem e o texto lado a lado */
-            align-items: center; /* Alinha verticalmente no centro */
-            background-color: rgba(255, 255, 255, 0.8); /* Fundo semi-transparente para o texto */
+        /* NOVO CSS para o ícone de avião com texto */
+        /* Contenho o ícone e o texto. Não é este que irá rodar. */
+        .aircraft-label-container {
+            display: flex;
+            align-items: center;
+            background-color: rgba(255, 255, 255, 0.8);
             border-radius: 4px;
-            padding: 2px 4px;
+            padding: 2px 6px; /* Aumentado o padding horizontal */
             white-space: nowrap;
             box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-            transform-origin: center center; /* Importante para a rotação */
+            /* O transform-origin aqui é para este container, que não vai rodar */
         }
-        .airplane-marker img {
-            display: block; /* Remove espaço extra abaixo da imagem */
-            width: 24px; /* Tamanho da imagem do avião */
+        /* Apenas a imagem do avião vai rodar */
+        .aircraft-label-container img {
+            display: block;
+            width: 24px;
             height: 24px;
-            margin-right: 4px; /* Espaço entre o ícone e o texto */
+            margin-right: 4px;
+            transition: transform 0.3s ease-out; /* Suaviza a rotação do avião */
+            /* O transform-origin para a rotação da imagem será definido no JS via style, para L.rotatedMarker */
         }
-        .airplane-marker .flight-text {
-            font-size: 0.8em; /* Tamanho da fonte do texto do voo */
+        .aircraft-label-container .flight-text {
+            font-size: 0.8em;
             font-weight: bold;
             color: #333;
+            /* Este texto não vai rodar, pois a rotação será aplicada apenas à imagem */
         }
     </style>
 </head>
@@ -139,6 +144,7 @@
         const RAPIDAPI_KEY = 'dbcf86698cmshd04b1b46934dd15p11474ejsn267bbdb81678'; // <-- Substitua AQUI
 	const RAPIDAPI_HOST = 'aircraftscatter.p.rapidapi.com'; // <-- Substitua AQUI (ex: aircraftscatter.p.rapidapi.com)
 
+
         // URL da API que você forneceu, com latitude e longitude de Oeiras
         const API_URL = 'https://aircraftscatter.p.rapidapi.com/lat/38.6892887/lon/-9.311829/';
 
@@ -160,7 +166,7 @@
         }
 
         // URL do ícone de avião (use o URL da sua imagem no GitHub)
-        const AIRCRAFT_ICON_URL = 'https://miguelt007.github.io/ads-b/plane.png'; // Substitua com o seu URL!
+        const AIRCRAFT_ICON_URL = 'https://raw.githubusercontent.com/miguelt007/ads-b/main/images/airplane.png'; // Substitua com o seu URL!
 
         // 2. Função para exibir os dados na tabela e no mapa
         function displayAircrafts(aircrafts) {
@@ -182,28 +188,33 @@
                 const row = tableBody.insertRow();
                 row.insertCell().textContent = aircraft.hex || 'N/A';
                 row.insertCell().textContent = aircraft.type || 'N/A';
-                row.insertCell().textContent = aircraft.flight ? aircraft.flight.trim() : 'N/A'; // Adicionado trim() para limpar espaços
+                row.insertCell().textContent = aircraft.flight ? aircraft.flight.trim() : 'N/A';
                 row.insertCell().textContent = aircraft.r || 'N/A';
                 row.insertCell().textContent = aircraft.t || 'N/A';
                 row.insertCell().textContent = aircraft.alt_baro || 'N/A';
 
                 if (map && aircraft.lat && aircraft.lon) {
-                    // Crie um L.divIcon com a imagem e o texto
-                    const customAircraftDivIcon = L.divIcon({
-                        className: 'airplane-marker', // Classe CSS para estilizar o div
-                        html: `
-                            <img src="${AIRCRAFT_ICON_URL}" alt="Avião">
+                    // Crie o conteúdo HTML para o divIcon
+                    // A rotação será aplicada diretamente na imagem via CSS transform no JS
+                    const iconHtml = `
+                        <div class="aircraft-label-container">
+                            <img src="${https://miguelt007.github.io/ads-b/plane.png}" alt="Avião" style="transform: rotate(${aircraft.track || 0}deg);">
                             <span class="flight-text">${aircraft.flight ? aircraft.flight.trim() : ''}</span>
-                        `,
-                        iconSize: [60, 24], // Largura e altura aproximadas do div (ajuste conforme necessário)
-                        iconAnchor: [30, 12] // Ponto de âncora (metade da largura, metade da altura)
+                        </div>
+                    `;
+
+                    // Crie o L.divIcon
+                    const customAircraftDivIcon = L.divIcon({
+                        className: 'custom-div-icon', // Uma classe para o Leaflet envolver (pode ser vazia, mas necessária)
+                        html: iconHtml,
+                        iconSize: [80, 24], // Ajustado para maior largura para acomodar texto (ajuste conforme o texto e fonte)
+                        iconAnchor: [40, 12] // O centro do ícone (metade do iconSize)
                     });
 
-                    // Use L.marker com o custom divIcon e o plugin RotatedMarker
+                    // Use L.marker com o custom divIcon. O plugin RotatedMarker NÃO é mais necessário aqui,
+                    // pois a rotação da imagem é feita via CSS diretamente no HTML do divIcon.
                     const marker = L.marker([aircraft.lat, aircraft.lon], {
-                        icon: customAircraftDivIcon,
-                        rotationAngle: aircraft.track || 0,
-                        rotationOrigin: 'center center'
+                        icon: customAircraftDivIcon
                     }).addTo(aircraftMarkers);
 
                     marker.bindPopup(`
