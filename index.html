@@ -359,15 +359,15 @@
                     }).addTo(aircraftMarkers);
 
                     marker.bindPopup(`
-                        <b>Voo:</b> ${aircraft.flight ? aircraft.flight.trim() : 'N/A'}<br>
-                        <b>Registro:</b> ${aircraft.r || 'N/A'}<br>
-                        <b>Modelo:</b> ${aircraft.t || 'N/A'}<br>
-                        <b>Altitude:</b> ${aircraft.alt_baro || 'N/A'} ft<br>
-                        <b>Rumo:</b> ${aircraft.track || 'N/A'}°<br>
-                        <b>Última Posição:</b> ${aircraft.seen_pos || 'N/A'} s<br>
-                        <b>GS (kts):</b> ${aircraft.gs || 'N/A'}<br>
-                        <br><a href="https://flightaware.com/live/flight/${aircraft.flight ? aircraft.flight.trim() : ''}" target="_blank">Ver no FlightAware</a>
-                    `);
+    <b>Voo:</b> ${ (aircraft.flight && typeof aircraft.flight === 'string') ? aircraft.flight.trim() : 'N/A' }<br>
+    <b>Registro:</b> ${aircraft.r || 'N/A'}<br>
+    <b>Modelo:</b> ${aircraft.t || 'N/A'}<br>
+    <b>Altitude:</b> ${aircraft.alt_baro || 'N/A'} ft<br>
+    <b>Rumo:</b> ${aircraft.track || 'N/A'}°<br>
+    <b>Última Posição:</b> ${aircraft.seen_pos || 'N/A'} s<br>
+    <b>GS (kts):</b> ${aircraft.gs || 'N/A'}<br>
+    <br><a href="https://flightaware.com/live/flight/${(aircraft.flight && typeof aircraft.flight === 'string') ? aircraft.flight.trim() : ''}" target="_blank">Ver no FlightAware</a>
+`);
                 }
             });
 
