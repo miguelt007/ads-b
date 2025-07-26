@@ -205,7 +205,7 @@
         }
 
         // URL do ícone de avião (use o URL da sua imagem no GitHub)
-        const AIRCRAFT_ICON_URL = ''https://miguelt007.github.io/ads-b/plane.png''; // Substitua com o seu URL!
+        const AIRCRAFT_ICON_URL = 'https://miguelt007.github.io/ads-b/plane.png'; // Substitua com o seu URL!
 
         // 2. Função para exibir os dados na tabela e no mapa
         function displayAircrafts(aircrafts) {
@@ -318,4 +318,32 @@
                 });
 
                 if (!response.ok) {
-                    const errorResponse
+                    const errorResponseText = await response.text();
+                    throw new Error(`Erro HTTP! Status: ${response.status}. Detalhes: ${errorResponseText || 'Sem detalhes.'}`);
+                }
+
+                const data = await response.json();
+                console.log("Dados recebidos da API:", data);
+
+                if (data && data.ac) {
+                    displayAircrafts(data.ac);
+                } else {
+                    console.warn("API retornou dados em formato inesperado ou sem a propriedade 'ac':", data);
+                    displayAircrafts([]);
+                }
+
+            } catch (error) {
+                console.error('Erro ao buscar dados da API:', error);
+                tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: red;">Erro ao carregar dados: ${error.message}. Verifique suas credenciais da API ou a conectividade.</td></tr>`;
+            }
+        }
+
+        // Chamar a função para buscar dados da API quando a página carregar
+        if (map) {
+            fetchAircraftData();
+            setupTableFilter(); // NOVO: Chama a função para configurar o filtro
+            // setInterval(fetchAircraftData, 30000); // Para atualizar dados periodicamente
+        }
+    </script>
+</body>
+</html>
