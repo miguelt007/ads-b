@@ -341,11 +341,8 @@
                         <b>Modelo:</b> ${aircraft.t || 'N/A'}<br>
                         <b>Altitude:</b> ${aircraft.alt_baro || 'N/A'} ft<br>
                         <b>Trajeto:</b> ${aircraft.track || 'N/A'}°<br>
-                        <b>Mensagens:</b> ${aircraft.messages || 'N/A'}<br>
                         <b>Última Posição:</b> ${aircraft.seen_pos || 'N/A'} s<br>
-                        <b>RSSI:</b> ${aircraft.rssi || 'N/A'}<br>
-                        <b>Latitude:</b> ${aircraft.lat || 'N/A'}<br>
-                        <b>Longitude:</b> ${aircraft.lon || 'N/A'}
+                        <b>GS:</b> ${aircraft.gs || 'N/A'}<br>
                         <br>
                         <a href="https://flightaware.com/live/flight/${aircraft.flight ? aircraft.flight.trim() : ''}" target="_blank">Ver no FlightAware</a>
                     `);
