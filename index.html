@@ -192,11 +192,13 @@
                 <thead>
                     <tr>
                         <th data-column="hex">HEX <span class="sort-arrow"></span></th>
-                        <th data-column="type">Tipo <span class="sort-arrow"></span></th>
-                        <th data-column="flight">Voo <span class="sort-arrow"></span></th>
-                        <th data-column="r">Registro <span class="sort-arrow"></span></th>
-                        <th data-column="t">Modelo <span class="sort-arrow"></span></th>
+			<th data-column="flight">Voo <span class="sort-arrow"></span></th>
+			<th data-column="r">Registro <span class="sort-arrow"></span></th>
                         <th data-column="alt_baro">Altitude (Baro) <span class="sort-arrow"></span></th>
+			<th data-column="gs">GS (kt) <span class="sort-arrow"></span></th> <th data-column="alt_baro">Altitude (Baro) <span class="sort-arrow"></span></th>
+                        <th data-column="t">Modelo <span class="sort-arrow"></span></th>
+			<th data-column="type">Source <span class="sort-arrow"></span></th>
+                        
                     </tr>
                 </thead>
                 <tbody>
@@ -311,11 +313,12 @@
 
                 const row = tableBody.insertRow();
                 row.insertCell().textContent = aircraft.hex || 'N/A';
-                row.insertCell().textContent = aircraft.type || 'N/A';
                 row.insertCell().textContent = aircraft.flight ? aircraft.flight.trim() : 'N/A';
-                row.insertCell().textContent = aircraft.r || 'N/A';
-                row.insertCell().textContent = aircraft.t || 'N/A';
-                row.insertCell().textContent = aircraft.alt_baro || 'N/A';
+		row.insertCell().textContent = aircraft.r || 'N/A';
+		row.insertCell().textContent = aircraft.alt_baro || 'N/A';
+		row.insertCell().textContent = aircraft.gs || 'N/A';
+		row.insertCell().textContent = aircraft.t || 'N/A';
+                row.insertCell().textContent = aircraft.type || 'N/A';
                 row.classList.add(altitudeColorClass); // Adiciona a classe de cor à linha da tabela
 
                 if (map && aircraft.lat && aircraft.lon) {
@@ -399,6 +402,7 @@
                            (aircraft.flight && String(aircraft.flight).toUpperCase().includes(filterText)) ||
                            (aircraft.r && String(aircraft.r).toUpperCase().includes(filterText)) ||
                            (aircraft.t && String(aircraft.t).toUpperCase().includes(filterText)) ||
+                           (aircraft.gs && String(aircraft.gs).toUpperCase().includes(filterText)) || // ADICIONE ESTA LINHA
                            (aircraft.alt_baro && String(aircraft.alt_baro).toUpperCase().includes(filterText));
                 });
             }
