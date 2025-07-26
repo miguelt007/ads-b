@@ -72,11 +72,20 @@
         tr:nth-child(even) {
             background-color: #f2f2f2;
         }
-        /* Cor de fundo para as linhas da tabela baseada na altitude */
-        .altitude-low { background-color: #e6ffe6; } /* Verde claro */
-        .altitude-medium-low { background-color: #e6f7ff; } /* Azul claro */
-        .altitude-medium-high { background-color: #cceeff; } /* Azul médio */
-        .altitude-high { background-color: #99ccff; } /* Azul escuro */
+
+        /* Novas Cores de fundo para as linhas da tabela baseada na altitude (11 níveis + desconhecido) */
+        .altitude-level-0 { background-color: #ffe0b2; } /* Laranja muito claro (0 ft) */
+        .altitude-level-1 { background-color: #ffcc80; } /* Laranja claro (1-500 ft) */
+        .altitude-level-2 { background-color: #ffb74d; } /* Laranja médio (501-1000 ft) */
+        .altitude-level-3 { background-color: #fff176; } /* Amarelo muito claro (1001-2000 ft) */
+        .altitude-level-4 { background-color: #ffee58; } /* Amarelo claro (2001-4000 ft) */
+        .altitude-level-5 { background-color: #ffeb3b; } /* Amarelo médio (4001-6000 ft) */
+        .altitude-level-6 { background-color: #c8e6c9; } /* Verde muito claro (6001-8000 ft) */
+        .altitude-level-7 { background-color: #a5d6a7; } /* Verde claro (8001-10000 ft) */
+        .altitude-level-8 { background-color: #81c784; } /* Verde médio (10001-20000 ft) */
+        .altitude-level-9 { background-color: #bbdefb; } /* Azul muito claro (20001-30000 ft) */
+        .altitude-level-10 { background-color: #90caf9; } /* Azul claro (30001-40000 ft) */
+        .altitude-level-11 { background-color: #f8bbd0; } /* Rosa muito claro (> 40000 ft) */
         .altitude-unknown { background-color: #f0f0f0; } /* Cinza claro */
 
         tr:hover {
@@ -192,12 +201,12 @@
                 <thead>
                     <tr>
                         <th data-column="hex">HEX <span class="sort-arrow"></span></th>
-			<th data-column="flight">Callsign <span class="sort-arrow"></span></th>
-			<th data-column="r">Registro <span class="sort-arrow"></span></th>
-			<th data-column="t">Modelo <span class="sort-arrow"></span></th>
+                        <th data-column="flight">Callsign <span class="sort-arrow"></span></th>
+                        <th data-column="r">Registro <span class="sort-arrow"></span></th>
+                        <th data-column="t">Modelo <span class="sort-arrow"></span></th>
                         <th data-column="alt_baro">Alt.(ft) <span class="sort-arrow"></span></th>
-			<th data-column="gs">GS (kt) <span class="sort-arrow"></span></th>                        
-			<th data-column="type">Source <span class="sort-arrow"></span></th>                        
+                        <th data-column="gs">GS (kt) <span class="sort-arrow"></span></th>
+                        <th data-column="type">Source <span class="sort-arrow"></span></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -225,13 +234,22 @@
         let map;
         let aircraftMarkers;
 
-        // NOVO: Definição das faixas de altitude e suas cores
+        // NOVO: Definição das faixas de altitude e suas cores (11 níveis + desconhecido)
+        // Cores em ordem: Laranja (3 tons), Amarelo (3 tons), Verde (3 tons), Azul (2 tons), Rosa (1 tom)
         const altitudeRanges = [
-            { threshold: 10000, label: '0 - 10,000 ft', colorClass: 'altitude-low', colorRgba: 'rgba(192, 255, 192, 0.8)' },
-            { threshold: 25000, label: '10,001 - 25,000 ft', colorClass: 'altitude-medium-low', colorRgba: 'rgba(192, 224, 255, 0.8)' },
-            { threshold: 35000, label: '25,001 - 35,000 ft', colorClass: 'altitude-medium-high', colorRgba: 'rgba(160, 200, 255, 0.8)' },
-            { threshold: Infinity, label: '> 35,000 ft', colorClass: 'altitude-high', colorRgba: 'rgba(128, 179, 255, 0.8)' },
-            { threshold: null, label: 'Altitude Desconhecida', colorClass: 'altitude-unknown', colorRgba: 'rgba(240, 240, 240, 0.8)' }
+            { threshold: 0, label: '0 ft', colorClass: 'altitude-level-0', colorRgba: 'rgba(255, 224, 178, 0.8)' },          // Laranja muito claro
+            { threshold: 500, label: '1 - 500 ft', colorClass: 'altitude-level-1', colorRgba: 'rgba(255, 204, 128, 0.8)' },      // Laranja claro
+            { threshold: 1000, label: '501 - 1,000 ft', colorClass: 'altitude-level-2', colorRgba: 'rgba(255, 183, 77, 0.8)' },    // Laranja médio
+            { threshold: 2000, label: '1,001 - 2,000 ft', colorClass: 'altitude-level-3', colorRgba: 'rgba(255, 241, 118, 0.8)' },   // Amarelo muito claro
+            { threshold: 4000, label: '2,001 - 4,000 ft', colorClass: 'altitude-level-4', colorRgba: 'rgba(255, 238, 88, 0.8)' },    // Amarelo claro
+            { threshold: 6000, label: '4,001 - 6,000 ft', colorClass: 'altitude-level-5', colorRgba: 'rgba(255, 235, 59, 0.8)' },    // Amarelo médio
+            { threshold: 8000, label: '6,001 - 8,000 ft', colorClass: 'altitude-level-6', colorRgba: 'rgba(200, 230, 201, 0.8)' }, // Verde muito claro
+            { threshold: 10000, label: '8,001 - 10,000 ft', colorClass: 'altitude-level-7', colorRgba: 'rgba(165, 214, 167, 0.8)' }, // Verde claro
+            { threshold: 20000, label: '10,001 - 20,000 ft', colorClass: 'altitude-level-8', colorRgba: 'rgba(129, 199, 132, 0.8)' }, // Verde médio
+            { threshold: 30000, label: '20,001 - 30,000 ft', colorClass: 'altitude-level-9', colorRgba: 'rgba(187, 222, 251, 0.8)' }, // Azul muito claro
+            { threshold: 40000, label: '30,001 - 40,000 ft', colorClass: 'altitude-level-10', colorRgba: 'rgba(144, 202, 249, 0.8)' }, // Azul claro
+            { threshold: Infinity, label: '> 40,000 ft', colorClass: 'altitude-level-11', colorRgba: 'rgba(248, 187, 208, 0.8)' },    // Rosa muito claro
+            { threshold: null, label: 'Altitude Desconhecida', colorClass: 'altitude-unknown', colorRgba: 'rgba(240, 240, 240, 0.8)' } // Cinza claro
         ];
 
         // NOVO: Mapeia as classes de altitude para as cores RGBA para uso no JS
@@ -288,7 +306,7 @@
                     return range.colorClass;
                 }
             }
-            return 'altitude-unknown'; // Caso não caia em nenhuma faixa definida (deveria ser coberto por Infinity)
+            return 'altitude-unknown'; // Fallback, embora Infinity deva cobrir todos os casos
         }
 
         // Função para exibir os dados na tabela e no mapa (agora recebe os dados já filtrados/ordenados)
@@ -297,10 +315,13 @@
             tableBody.innerHTML = '';
             aircraftMarkers.clearLayers();
 
+            // Your table has 7 columns based on your provided HTML
+            const numColumns = 7; 
+
             if (!aircraftsToDisplay || aircraftsToDisplay.length === 0) {
                 const row = tableBody.insertRow();
                 const cell = row.insertCell();
-                cell.colSpan = 7;
+                cell.colSpan = numColumns; // Updated to 7 columns
                 cell.textContent = "Nenhuma aeronave encontrada ou corresponde ao filtro.";
                 cell.style.textAlign = "center";
                 cell.style.color = "orange";
@@ -313,19 +334,19 @@
                 const row = tableBody.insertRow();
                 row.insertCell().textContent = aircraft.hex || 'N/A';
                 row.insertCell().textContent = aircraft.flight ? aircraft.flight.trim() : 'N/A';
-		row.insertCell().textContent = aircraft.r || 'N/A';
-		row.insertCell().textContent = aircraft.t || 'N/A';
-		row.insertCell().textContent = aircraft.alt_baro || 'N/A';
-		row.insertCell().textContent = aircraft.gs || 'N/A';		
+                row.insertCell().textContent = aircraft.r || 'N/A';
+                row.insertCell().textContent = aircraft.t || 'N/A';
+                row.insertCell().textContent = aircraft.alt_baro || 'N/A';
+                row.insertCell().textContent = aircraft.gs || 'N/A';        
                 row.insertCell().textContent = aircraft.type || 'N/A';
-                row.classList.add(altitudeColorClass); // Adiciona a classe de cor à linha da tabela
+                row.classList.add(altitudeColorClass); // Add altitude color class to the table row
 
                 if (map && aircraft.lat && aircraft.lon) {
                     const customAircraftDivIcon = L.divIcon({
                         className: 'custom-div-icon',
                         html: `
                             <div class="aircraft-label-container" style="background-color: ${altitudeColorMap[altitudeColorClass]};">
-                                <img src="${'https://miguelt007.github.io/ads-b/plane.png'}" alt="Avião" style="transform: rotate(${aircraft.track || 0}deg);">
+                                <img src="${'https://miguelt007.github.io/ads-b/plane.png'L}" alt="Avião" style="transform: rotate(${aircraft.track || 0}deg);">
                                 <span class="flight-text">${aircraft.flight ? aircraft.flight.trim() : ''}</span>
                             </div>
                         `,
@@ -400,7 +421,7 @@
                            (aircraft.flight && String(aircraft.flight).toUpperCase().includes(filterText)) ||
                            (aircraft.r && String(aircraft.r).toUpperCase().includes(filterText)) ||
                            (aircraft.t && String(aircraft.t).toUpperCase().includes(filterText)) ||
-                           (aircraft.gs && String(aircraft.gs).toUpperCase().includes(filterText)) || // ADICIONE ESTA LINHA
+                           (aircraft.gs && String(aircraft.gs).toUpperCase().includes(filterText)) ||
                            (aircraft.alt_baro && String(aircraft.alt_baro).toUpperCase().includes(filterText));
                 });
             }
@@ -427,7 +448,8 @@
 
         async function fetchAircraftData() {
             const tableBody = document.getElementById('aircraftTable').getElementsByTagName('tbody')[0];
-            tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center;">Carregando dados...</td></tr>`;
+            // The table has 7 columns, so colspan should be 7
+            tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center;">Carregando dados...</td></tr>`; 
 
             try {
                 const response = await fetch(API_URL, {
@@ -457,11 +479,12 @@
 
             } catch (error) {
                 console.error('Erro ao buscar dados da API:', error);
-                tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: red;">Erro ao carregar dados: ${error.message}. Verifique suas credenciais da API ou a conectividade.</td></tr>`;
+                // The table has 7 columns, so colspan should be 7
+                tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: red;">Erro ao carregar dados: ${error.message}. Verifique suas credenciais da API ou a conectividade.</td></tr>`;
             }
         }
 
-        // NOVO: Função para adicionar a legenda ao mapa
+        // Função para adicionar a legenda ao mapa
         function addLegendToMap() {
             const legend = L.control({ position: 'bottomright' }); // Posição da legenda no mapa
 
@@ -469,13 +492,28 @@
                 const div = L.DomUtil.create('div', 'info legend');
                 div.innerHTML += '<h4>Altitude (ft)</h4>'; // Título da legenda
 
-                // Itera sobre as faixas de altitude e cria itens na legenda
-                for (let i = 0; i < altitudeRanges.length; i++) {
+                // Iterate over altitude ranges and create legend items
+                // Exclude the last item (Altitude Desconhecida) for the loop, add it separately
+                for (let i = 0; i < altitudeRanges.length - 1; i++) {
                     const range = altitudeRanges[i];
+                    // Format label to show range
+                    let formattedLabel = range.label;
+                    if (i === 0) { // Special case for 0 ft
+                        formattedLabel = '0 ft';
+                    } else if (range.threshold === Infinity) { // Special case for > max ft
+                        formattedLabel = `> ${altitudeRanges[i-1].threshold} ft`;
+                    } else { // Normal range
+                        formattedLabel = `${(altitudeRanges[i-1].threshold + 1).toLocaleString()} - ${range.threshold.toLocaleString()} ft`;
+                    }
                     div.innerHTML +=
-                        '<i style="background:' + range.colorRgba + '"></i> ' + // Amostra de cor
-                        range.label + '<br>'; // Texto da faixa
+                        '<i style="background:' + range.colorRgba + '"></i> ' + // Color sample
+                        formattedLabel + '<br>'; // Range text
                 }
+                // Add the unknown altitude item
+                const unknownRange = altitudeRanges[altitudeRanges.length - 1];
+                div.innerHTML +=
+                     '<i style="background:' + unknownRange.colorRgba + '"></i> ' + // Color sample
+                     unknownRange.label + '<br>'; // Range text
                 return div;
             };
 
@@ -487,7 +525,7 @@
             fetchAircraftData();
             setupTableFilter();
             setupTableSorting();
-            addLegendToMap(); // NOVO: Adiciona a legenda ao mapa
+            addLegendToMap();
             setInterval(fetchAircraftData, 30000);
         }
     </script>
