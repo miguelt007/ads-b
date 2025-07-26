@@ -62,9 +62,9 @@
         th {
             background-color: #007bff;
             color: white;
-            cursor: pointer; /* Indica que o cabeçalho é clicável */
-            position: relative; /* Para posicionar as setas */
-            padding-right: 25px; /* Espaço para as setas */
+            cursor: pointer;
+            position: relative;
+            padding-right: 25px;
         }
         th:hover {
             background-color: #0056b3;
@@ -72,8 +72,15 @@
         tr:nth-child(even) {
             background-color: #f2f2f2;
         }
+        /* Cor de fundo para as linhas da tabela baseada na altitude */
+        .altitude-low { background-color: #e6ffe6; } /* Verde claro */
+        .altitude-medium-low { background-color: #e6f7ff; } /* Azul claro */
+        .altitude-medium-high { background-color: #cceeff; } /* Azul médio */
+        .altitude-high { background-color: #99ccff; } /* Azul escuro */
+        .altitude-unknown { background-color: #f0f0f0; } /* Cinza claro */
+
         tr:hover {
-            background-color: #ddd;
+            background-color: #ddd !important; /* !important para sobrepor as cores de altitude no hover */
         }
         @media (max-width: 900px) {
             .container {
@@ -95,18 +102,19 @@
         .aircraft-label-container {
             display: flex;
             align-items: center;
-            background-color: rgba(255, 255, 255, 0.8);
+            /* background-color será definido via JS para a cor da altitude */
             border-radius: 4px;
             padding: 2px 6px;
             white-space: nowrap;
             box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+            transition: background-color 0.3s ease; /* Suaviza a mudança de cor */
         }
         .aircraft-label-container img {
             display: block;
             width: 24px;
             height: 24px;
             margin-right: 4px;
-            transition: transform 0.3s ease-out; /* Suaviza a rotação do avião */
+            transition: transform 0.3s ease-out;
         }
         .aircraft-label-container .flight-text {
             font-size: 0.8em;
@@ -128,27 +136,26 @@
             box-sizing: border-box;
         }
 
-        /* NOVOS ESTILOS PARA SETAS DE ORDENAÇÃO */
+        /* ESTILOS PARA SETAS DE ORDENAÇÃO */
         .sort-arrow {
             position: absolute;
             right: 8px;
             top: 50%;
             transform: translateY(-50%);
             font-size: 0.7em;
-            color: rgba(255, 255, 255, 0.7); /* Cor padrão da seta */
+            color: rgba(255, 255, 255, 0.7);
         }
         .sort-asc::after {
-            content: " ▲"; /* Seta para cima (ascendente) */
-            color: white; /* Seta ativa mais visível */
+            content: " ▲";
+            color: white;
         }
         .sort-desc::after {
-            content: " ▼"; /* Seta para baixo (descendente) */
-            color: white; /* Seta ativa mais visível */
+            content: " ▼";
+            color: white;
         }
-        /* Esconde a seta padrão se a coluna não estiver ordenada */
         th:not(.sort-asc):not(.sort-desc) .sort-arrow::after {
-            content: " ▼"; /* Seta padrão para indicar que é ordenável */
-            color: rgba(255, 255, 255, 0.4); /* Seta padrão mais discreta */
+            content: " ▼";
+            color: rgba(255, 255, 255, 0.4);
         }
     </style>
 </head>
@@ -215,12 +222,13 @@
                 attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
             });
 
+            // Lembre-se de substituir SUA_CHAVE_DE_API_DO_STADIA_AQUI pela sua chave real do Stadia Maps
             const stadiaTerrain = L.tileLayer('https://tiles.stadiamaps.com/tiles/stamen_terrain/{z}/{x}/{y}{r}.png?api_key=3f0a9b17-f599-4060-9407-966d99d13a94', {
-    minZoom: 0,
-    maxZoom: 18,
-    attribution: '&copy; <a href="https://stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://stamen.com/" target="_blank">Stamen Design</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    ext: 'png'
-});
+                minZoom: 0,
+                maxZoom: 18,
+                attribution: '&copy; <a href="https://stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://stamen.com/" target="_blank">Stamen Design</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                ext: 'png'
+            });
 
             const baseLayers = {
                 "OpenStreetMap": osm,
@@ -235,6 +243,22 @@
         }
 
         const AIRCRAFT_ICON_URL = 'https://miguelt007.github.io/ads-b/plane.png'; // Substitua com o seu URL!
+
+        // NOVO: Função para obter a classe de cor da altitude
+        function getAltitudeColorClass(altitude) {
+            if (altitude === null || isNaN(altitude)) {
+                return 'altitude-unknown';
+            }
+            if (altitude <= 10000) {
+                return 'altitude-low';
+            } else if (altitude <= 25000) {
+                return 'altitude-medium-low';
+            } else if (altitude <= 35000) {
+                return 'altitude-medium-high';
+            } else {
+                return 'altitude-high';
+            }
+        }
 
         // Função para exibir os dados na tabela e no mapa (agora recebe os dados já filtrados/ordenados)
         function displayAircrafts(aircraftsToDisplay) {
@@ -253,6 +277,8 @@
             }
 
             aircraftsToDisplay.forEach(aircraft => {
+                const altitudeColorClass = getAltitudeColorClass(aircraft.alt_baro);
+
                 const row = tableBody.insertRow();
                 row.insertCell().textContent = aircraft.hex || 'N/A';
                 row.insertCell().textContent = aircraft.type || 'N/A';
@@ -260,18 +286,36 @@
                 row.insertCell().textContent = aircraft.r || 'N/A';
                 row.insertCell().textContent = aircraft.t || 'N/A';
                 row.insertCell().textContent = aircraft.alt_baro || 'N/A';
+                row.classList.add(altitudeColorClass); // Adiciona a classe de cor à linha da tabela
 
                 if (map && aircraft.lat && aircraft.lon) {
                     const iconHtml = `
-                        <div class="aircraft-label-container">
+                        <div class="aircraft-label-container" style="background-color: var(--${altitudeColorClass}-color);">
                             <img src="${AIRCRAFT_ICON_URL}" alt="Avião" style="transform: rotate(${aircraft.track || 0}deg);">
                             <span class="flight-text">${aircraft.flight ? aircraft.flight.trim() : ''}</span>
                         </div>
                     `;
 
+                    // Definir as cores no CSS e usar variáveis CSS para o JS
+                    // Para o JS poder usar as cores definidas no CSS, precisamos de um pequeno truque
+                    // Ou, podemos definir as cores diretamente no JS e usá-las em ambos os locais.
+                    // Vou usar a segunda opção para simplificar.
+                    const colorMap = {
+                        'altitude-low': 'rgba(192, 255, 192, 0.8)', /* Verde claro mais opaco */
+                        'altitude-medium-low': 'rgba(192, 224, 255, 0.8)', /* Azul claro mais opaco */
+                        'altitude-medium-high': 'rgba(160, 200, 255, 0.8)', /* Azul médio mais opaco */
+                        'altitude-high': 'rgba(128, 179, 255, 0.8)', /* Azul escuro mais opaco */
+                        'altitude-unknown': 'rgba(240, 240, 240, 0.8)' /* Cinza claro mais opaco */
+                    };
+
                     const customAircraftDivIcon = L.divIcon({
                         className: 'custom-div-icon',
-                        html: iconHtml,
+                        html: `
+                            <div class="aircraft-label-container" style="background-color: ${colorMap[altitudeColorClass]};">
+                                <img src="${AIRCRAFT_ICON_URL}" alt="Avião" style="transform: rotate(${aircraft.track || 0}deg);">
+                                <span class="flight-text">${aircraft.flight ? aircraft.flight.trim() : ''}</span>
+                            </div>
+                        `,
                         iconSize: [80, 24],
                         iconAnchor: [40, 12]
                     });
@@ -302,38 +346,33 @@
             }
         }
 
-        // Função para configurar o filtro da tabela
         function setupTableFilter() {
             const input = document.getElementById("tableFilter");
             input.addEventListener("keyup", function() {
-                applyFiltersAndSort(); // Re-aplica filtros e ordenação
+                applyFiltersAndSort();
             });
         }
 
-        // NOVO: Função para configurar a ordenação da tabela
         function setupTableSorting() {
             const headers = document.querySelectorAll("#aircraftTable th");
             headers.forEach(header => {
                 header.addEventListener("click", function() {
                     const column = this.getAttribute("data-column");
 
-                    // Reseta as setas dos outros cabeçalhos
                     headers.forEach(h => {
                         if (h !== this) {
                             h.classList.remove('sort-asc', 'sort-desc');
                         }
                     });
 
-                    // Define a direção da ordenação
                     if (currentSortColumn === column) {
                         currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
                     } else {
                         currentSortColumn = column;
-                        currentSortDirection = 'asc'; // Padrão ao clicar numa nova coluna
+                        currentSortDirection = 'asc';
                     }
 
-                    // Adiciona as classes para as setas
-                    this.classList.remove('sort-asc', 'sort-desc'); // Remove para evitar duplicidade
+                    this.classList.remove('sort-asc', 'sort-desc');
                     this.classList.add(`sort-${currentSortDirection}`);
 
                     applyFiltersAndSort();
@@ -341,15 +380,12 @@
             });
         }
 
-        // NOVO: Função para aplicar filtros E ordenação
         function applyFiltersAndSort() {
-            let filteredData = [...allAircraftData]; // Cria uma cópia para não modificar os dados originais
+            let filteredData = [...allAircraftData];
 
-            // 1. Aplicar filtro
             const filterText = document.getElementById("tableFilter").value.toUpperCase();
             if (filterText) {
                 filteredData = filteredData.filter(aircraft => {
-                    // Verifica se o texto do filtro está em qualquer uma das colunas visíveis
                     return (aircraft.hex && String(aircraft.hex).toUpperCase().includes(filterText)) ||
                            (aircraft.type && String(aircraft.type).toUpperCase().includes(filterText)) ||
                            (aircraft.flight && String(aircraft.flight).toUpperCase().includes(filterText)) ||
@@ -359,17 +395,14 @@
                 });
             }
 
-            // 2. Aplicar ordenação
             if (currentSortColumn) {
                 filteredData.sort((a, b) => {
                     const valA = a[currentSortColumn];
                     const valB = b[currentSortColumn];
 
-                    // Tratamento para valores numéricos (ex: altitude)
                     if (!isNaN(parseFloat(valA)) && !isNaN(parseFloat(valB)) && typeof valA !== 'string' && typeof valB !== 'string') {
                         return currentSortDirection === 'asc' ? parseFloat(valA) - parseFloat(valB) : parseFloat(valB) - parseFloat(valA);
                     } else {
-                        // Ordenação de string (case-insensitive)
                         const strA = String(valA || '').toUpperCase();
                         const strB = String(valB || '').toUpperCase();
                         if (strA < strB) return currentSortDirection === 'asc' ? -1 : 1;
@@ -382,7 +415,6 @@
             displayAircrafts(filteredData);
         }
 
-        // Função para buscar dados da API
         async function fetchAircraftData() {
             const tableBody = document.getElementById('aircraftTable').getElementsByTagName('tbody')[0];
             tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center;">Carregando dados...</td></tr>`;
@@ -405,8 +437,8 @@
                 console.log("Dados recebidos da API:", data);
 
                 if (data && data.ac) {
-                    allAircraftData = data.ac; // Armazena os dados brutos
-                    applyFiltersAndSort(); // Aplica o filtro e a ordenação iniciais
+                    allAircraftData = data.ac;
+                    applyFiltersAndSort();
                 } else {
                     console.warn("API retornou dados em formato inesperado ou sem a propriedade 'ac':", data);
                     allAircraftData = [];
@@ -423,7 +455,9 @@
         if (map) {
             fetchAircraftData();
             setupTableFilter();
-            setupTableSorting(); // NOVO: Chama a função para configurar a ordenação
+            setupTableSorting();
+            // ATIVADO: Atualiza os dados a cada 30 segundos (30000 milissegundos)
+            setInterval(fetchAircraftData, 30000);
         }
     </script>
 </body>
