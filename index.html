@@ -110,11 +110,11 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-rotatedmarker@0.2.0/leaflet.rotatedMarker.js"></script>
-    
+
     <script>
         // *** IMPORTANTE: Substitua estes valores pelas suas credenciais RapidAPI ***
         const RAPIDAPI_KEY = 'dbcf86698cmshd04b1b46934dd15p11474ejsn267bbdb81678'; // <-- Substitua AQUI
-const RAPIDAPI_HOST = 'aircraftscatter.p.rapidapi.com'; // <-- Substitua AQUI (ex: aircraftscatter.p.rapidapi.com)
+        const RAPIDAPI_HOST = 'aircraftscatter.p.rapidapi.com'; // <-- Substitua AQUI (ex: aircraftscatter.p.rapidapi.com)
 
         // URL da API que você forneceu, com latitude e longitude de Oeiras
         const API_URL = 'https://aircraftscatter.p.rapidapi.com/lat/38.6892887/lon/-9.311829/';
@@ -137,8 +137,6 @@ const RAPIDAPI_HOST = 'aircraftscatter.p.rapidapi.com'; // <-- Substitua AQUI (e
         }
 
         // Definir um ícone de avião personalizado
-        // CERTIFIQUE-SE DE QUE ESTE URL DA IMAGEM É ACESSÍVEL!
-        // Você pode substituir por uma imagem no seu próprio repositório GitHub se preferir.
         const aircraftIcon = L.icon({
             iconUrl: 'https://cdn-icons-png.flaticon.com/512/32/32204.png', // Exemplo: ícone de avião simples (apontando para cima)
             iconSize: [24, 24], // Tamanho do ícone
@@ -155,13 +153,13 @@ const RAPIDAPI_HOST = 'aircraftscatter.p.rapidapi.com'; // <-- Substitua AQUI (e
                 const row = tableBody.insertRow();
                 const cell = row.insertCell();
                 cell.colSpan = 6;
-                cell.textContent = "Nenhuma aeronave encontrada na área.";
+                cell.textContent = "Nenhuma aeronave encontrada na área ou dados indisponíveis.";
                 cell.style.textAlign = "center";
+                cell.style.color = "orange"; // Cor para indicar que não há dados
                 return;
             }
 
             aircrafts.forEach(aircraft => {
-                // Adicionar linha à tabela
                 const row = tableBody.insertRow();
                 row.insertCell().textContent = aircraft.hex || 'N/A';
                 row.insertCell().textContent = aircraft.type || 'N/A';
@@ -170,11 +168,76 @@ const RAPIDAPI_HOST = 'aircraftscatter.p.rapidapi.com'; // <-- Substitua AQUI (e
                 row.insertCell().textContent = aircraft.t || 'N/A';
                 row.insertCell().textContent = aircraft.alt_baro || 'N/A';
 
-                // Adicionar marcador ao mapa, se lat e lon estiverem disponíveis
                 if (map && aircraft.lat && aircraft.lon) {
-                    // Usar o L.marker com o plugin RotatedMarker
-                    // O valor 'track' da API é a direção em graus (0-359.9). Usamos isso para rotationAngle.
                     const marker = L.marker([aircraft.lat, aircraft.lon], {
                         icon: aircraftIcon,
-                        rotationAngle: aircraft.track || 0, // Usa o 'track' para definir o ângulo de rotação
-                        rotationOrigin: 'center center' // Opcional: Define o ponto de rotação (p
+                        rotationAngle: aircraft.track || 0,
+                        rotationOrigin: 'center center'
+                    }).addTo(aircraftMarkers);
+
+                    marker.bindPopup(`
+                        <b>Voo:</b> ${aircraft.flight || 'N/A'}<br>
+                        <b>Registro:</b> ${aircraft.r || 'N/A'}<br>
+                        <b>Modelo:</b> ${aircraft.t || 'N/A'}<br>
+                        <b>Altitude:</b> ${aircraft.alt_baro || 'N/A'} ft<br>
+                        <b>Trajeto:</b> ${aircraft.track || 'N/A'}°<br>
+                        <b>Mensagens:</b> ${aircraft.messages || 'N/A'}<br>
+                        <b>Última Posição:</b> ${aircraft.seen_pos || 'N/A'} s<br>
+                        <b>RSSI:</b> ${aircraft.rssi || 'N/A'}<br>
+                        <b>Latitude:</b> ${aircraft.lat || 'N/A'}<br>
+                        <b>Longitude:</b> ${aircraft.lon || 'N/A'}
+                        <br>
+                        <a href="https://flightaware.com/live/flight/${aircraft.flight ? aircraft.flight.trim() : ''}" target="_blank">Ver no FlightAware</a>
+                    `);
+                }
+            });
+
+            if (map && aircraftMarkers.getLayers().length > 0) {
+                map.fitBounds(aircraftMarkers.getBounds(), { padding: [50, 50] });
+            }
+        }
+
+        // 3. Função para buscar dados da API
+        async function fetchAircraftData() {
+            const tableBody = document.getElementById('aircraftTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center;">Carregando dados...</td></tr>`; // Mensagem de carregamento
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'GET',
+                    headers: {
+                        'X-RapidAPI-Key': RAPIDAPI_KEY,
+                        'X-RapidAPI-Host': RAPIDAPI_HOST
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorResponseText = await response.text(); // Tenta ler o corpo da resposta de erro
+                    throw new Error(`Erro HTTP! Status: ${response.status}. Detalhes: ${errorResponseText || 'Sem detalhes.'}`);
+                }
+
+                const data = await response.json();
+                console.log("Dados recebidos da API:", data); // AINDA PARA DEPURAR NA CONSOLA
+
+                if (data && data.ac) {
+                    displayAircrafts(data.ac);
+                } else {
+                    console.warn("API retornou dados em formato inesperado ou sem a propriedade 'ac':", data);
+                    displayAircrafts([]); // Exibe mensagem "nenhuma aeronave"
+                }
+
+            } catch (error) {
+                console.error('Erro ao buscar dados da API:', error);
+                tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: red;">Erro ao carregar dados: ${error.message}. Verifique suas credenciais da API ou a conectividade.</td></tr>`;
+            }
+        }
+
+        // Chamar a função para buscar dados da API quando a página carregar
+        if (map) {
+            fetchAircraftData();
+            // Para atualizar os dados periodicamente (descomente para ativar)
+            setInterval(fetchAircraftData, 30000); // A cada 30 segundos
+        }
+    </script>
+</body>
+</html>
