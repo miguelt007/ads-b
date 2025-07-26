@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Informações de Aeronaves com Mapa - API RapidAPI</title>
+    <title>Informações de Aeronaves com Mapa</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <style>
         body {
@@ -55,8 +55,7 @@
             padding: 8px;
             text-align: left;
             font-size: 0.9em;
-            /* Opcional: ajustar largura para algumas colunas */
-            white-space: nowrap; /* Evita que o texto quebre em várias linhas na célula */
+            white-space: nowrap;
         }
         th {
             background-color: #007bff;
@@ -68,7 +67,6 @@
         tr:hover {
             background-color: #ddd;
         }
-        /* Media query para tornar a tabela mais compacta em telas menores, se necessário */
         @media (max-width: 900px) {
             .container {
                 flex-direction: column;
@@ -80,7 +78,6 @@
             .table-container {
                 width: 100%;
             }
-            /* Reduzir o padding das células em telas muito pequenas */
             th, td {
                 padding: 6px;
             }
@@ -103,11 +100,7 @@
                         <th>Registro</th>
                         <th>Modelo</th>
                         <th>Altitude (Baro)</th>
-                        <th>Trajeto</th>
-                        <th>Mensagens</th>
-                        <th>Última Posição (s)</th>
-                        <th>RSSI</th>
-                    </tr>
+                        </tr>
                 </thead>
                 <tbody>
                     </tbody>
@@ -150,10 +143,10 @@
             if (!aircrafts || aircrafts.length === 0) {
                 const row = tableBody.insertRow();
                 const cell = row.insertCell();
-                cell.colSpan = 9; // Colspan ajustado para o novo número de colunas (eram 12, removemos 2 = 10)
+                cell.colSpan = 6; // Colspan ajustado para o novo número de colunas (eram 9, removemos 4 = 5 + 1 de Type = 6)
                 cell.textContent = "Nenhuma aeronave encontrada na área.";
                 cell.style.textAlign = "center";
-                return; // Sai da função se não houver aeronaves
+                return;
             }
 
             aircrafts.forEach(aircraft => {
@@ -165,19 +158,24 @@
                 row.insertCell().textContent = aircraft.r || 'N/A';
                 row.insertCell().textContent = aircraft.t || 'N/A';
                 row.insertCell().textContent = aircraft.alt_baro || 'N/A';
-                row.insertCell().textContent = aircraft.track || 'N/A';
-                // Removidas as inserções de Latitude e Longitude aqui
-                row.insertCell().textContent = aircraft.messages || 'N/A';
-                row.insertCell().textContent = aircraft.seen_pos || 'N/A';
-                row.insertCell().textContent = aircraft.rssi || 'N/A';
+                // Removidas as inserções para Trajeto, Mensagens, Última Posição (s), RSSI
+                // row.insertCell().textContent = aircraft.track || 'N/A';
+                // row.insertCell().textContent = aircraft.messages || 'N/A';
+                // row.insertCell().textContent = aircraft.seen_pos || 'N/A';
+                // row.insertCell().textContent = aircraft.rssi || 'N/A';
 
                 // Adicionar marcador ao mapa, se lat e lon estiverem disponíveis
-                if (map && aircraft.lat && aircraft.lon) { // Verifica se 'map' foi inicializado
+                if (map && aircraft.lat && aircraft.lon) {
                     const marker = L.marker([aircraft.lat, aircraft.lon]).addTo(aircraftMarkers);
                     marker.bindPopup(`
                         <b>Voo:</b> ${aircraft.flight || 'N/A'}<br>
                         <b>Registro:</b> ${aircraft.r || 'N/A'}<br>
+                        <b>Modelo:</b> ${aircraft.t || 'N/A'}<br>
                         <b>Altitude:</b> ${aircraft.alt_baro || 'N/A'} ft<br>
+                        <b>Trajeto:</b> ${aircraft.track || 'N/A'}<br>
+                        <b>Mensagens:</b> ${aircraft.messages || 'N/A'}<br>
+                        <b>Última Posição:</b> ${aircraft.seen_pos || 'N/A'} s<br>
+                        <b>RSSI:</b> ${aircraft.rssi || 'N/A'}<br>
                         <b>Latitude:</b> ${aircraft.lat || 'N/A'}<br>
                         <b>Longitude:</b> ${aircraft.lon || 'N/A'}
                         <br>
@@ -188,7 +186,7 @@
 
             // Ajustar o mapa para mostrar todos os marcadores, se houver algum
             if (map && aircraftMarkers.getLayers().length > 0) {
-                map.fitBounds(aircraftMarkers.getBounds(), { padding: [50, 50] }); // Adiciona um padding para melhor visualização
+                map.fitBounds(aircraftMarkers.getBounds(), { padding: [50, 50] });
             }
         }
 
@@ -221,7 +219,7 @@
             } catch (error) {
                 console.error('Erro ao buscar dados da API:', error);
                 const tableBody = document.getElementById('aircraftTable').getElementsByTagName('tbody')[0];
-                tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: red;">Erro ao carregar dados: ${error.message}. Verifique sua chave/host da API.</td></tr>`; // Colspan ajustado
+                tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: red;">Erro ao carregar dados: ${error.message}. Verifique sua chave/host da API.</td></tr>`; // Colspan ajustado
             }
         }
 
