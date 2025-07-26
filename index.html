@@ -62,6 +62,12 @@
         th {
             background-color: #007bff;
             color: white;
+            cursor: pointer; /* Indica que o cabeçalho é clicável */
+            position: relative; /* Para posicionar as setas */
+            padding-right: 25px; /* Espaço para as setas */
+        }
+        th:hover {
+            background-color: #0056b3;
         }
         tr:nth-child(even) {
             background-color: #f2f2f2;
@@ -108,18 +114,41 @@
             color: #333;
         }
 
-        /* Novo CSS para o filtro */
+        /* CSS para o filtro */
         .filter-container {
             margin-bottom: 15px;
-            text-align: right; /* Alinha o campo de pesquisa à direita */
+            text-align: right;
         }
         .filter-container input[type="text"] {
             padding: 8px;
             border: 1px solid #ccc;
             border-radius: 4px;
-            width: 100%; /* Ocupa a largura total do container */
-            max-width: 300px; /* Limita a largura máxima para não ficar muito grande */
-            box-sizing: border-box; /* Inclui padding e border na largura */
+            width: 100%;
+            max-width: 300px;
+            box-sizing: border-box;
+        }
+
+        /* NOVOS ESTILOS PARA SETAS DE ORDENAÇÃO */
+        .sort-arrow {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.7em;
+            color: rgba(255, 255, 255, 0.7); /* Cor padrão da seta */
+        }
+        .sort-asc::after {
+            content: " ▲"; /* Seta para cima (ascendente) */
+            color: white; /* Seta ativa mais visível */
+        }
+        .sort-desc::after {
+            content: " ▼"; /* Seta para baixo (descendente) */
+            color: white; /* Seta ativa mais visível */
+        }
+        /* Esconde a seta padrão se a coluna não estiver ordenada */
+        th:not(.sort-asc):not(.sort-desc) .sort-arrow::after {
+            content: " ▼"; /* Seta padrão para indicar que é ordenável */
+            color: rgba(255, 255, 255, 0.4); /* Seta padrão mais discreta */
         }
     </style>
 </head>
@@ -138,12 +167,12 @@
             <table id="aircraftTable">
                 <thead>
                     <tr>
-                        <th>HEX</th>
-                        <th>Tipo</th>
-                        <th>Voo</th>
-                        <th>Registro</th>
-                        <th>Modelo</th>
-                        <th>Altitude (Baro)</th>
+                        <th data-column="hex">HEX <span class="sort-arrow"></span></th>
+                        <th data-column="type">Tipo <span class="sort-arrow"></span></th>
+                        <th data-column="flight">Voo <span class="sort-arrow"></span></th>
+                        <th data-column="r">Registro <span class="sort-arrow"></span></th>
+                        <th data-column="t">Modelo <span class="sort-arrow"></span></th>
+                        <th data-column="alt_baro">Altitude (Baro) <span class="sort-arrow"></span></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -163,22 +192,23 @@
         // URL da API que você forneceu, com latitude e longitude de Oeiras
         const API_URL = 'https://aircraftscatter.p.rapidapi.com/lat/38.6892887/lon/-9.311829/';
 
-        // 1. Inicializar o Mapa Leaflet
+        // Variável global para armazenar os dados das aeronaves
+        let allAircraftData = [];
+        let currentSortColumn = null;
+        let currentSortDirection = 'asc'; // 'asc' ou 'desc'
+
         let map;
         let aircraftMarkers;
 
         if (document.getElementById('map')) {
-            map = L.map('map').setView([38.6892887, -9.311829], 10); // Centraliza em Oeiras com zoom apropriado
+            map = L.map('map').setView([38.6892887, -9.311829], 10);
 
             aircraftMarkers = L.featureGroup().addTo(map);
 
-            // --- Definição das Camadas Base ---
             const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             });
-
-            // Adiciona o OSM como camada padrão ao carregar
             osm.addTo(map);
 
             const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
@@ -204,26 +234,25 @@
             console.error("Elemento 'map' não encontrado. Certifique-se de que a div com id='map' existe no HTML.");
         }
 
-        // URL do ícone de avião (use o URL da sua imagem no GitHub)
         const AIRCRAFT_ICON_URL = 'https://miguelt007.github.io/ads-b/plane.png'; // Substitua com o seu URL!
 
-        // 2. Função para exibir os dados na tabela e no mapa
-        function displayAircrafts(aircrafts) {
+        // Função para exibir os dados na tabela e no mapa (agora recebe os dados já filtrados/ordenados)
+        function displayAircrafts(aircraftsToDisplay) {
             const tableBody = document.getElementById('aircraftTable').getElementsByTagName('tbody')[0];
             tableBody.innerHTML = '';
             aircraftMarkers.clearLayers();
 
-            if (!aircrafts || aircrafts.length === 0) {
+            if (!aircraftsToDisplay || aircraftsToDisplay.length === 0) {
                 const row = tableBody.insertRow();
                 const cell = row.insertCell();
                 cell.colSpan = 6;
-                cell.textContent = "Nenhuma aeronave encontrada na área ou dados indisponíveis.";
+                cell.textContent = "Nenhuma aeronave encontrada ou corresponde ao filtro.";
                 cell.style.textAlign = "center";
                 cell.style.color = "orange";
                 return;
             }
 
-            aircrafts.forEach(aircraft => {
+            aircraftsToDisplay.forEach(aircraft => {
                 const row = tableBody.insertRow();
                 row.insertCell().textContent = aircraft.hex || 'N/A';
                 row.insertCell().textContent = aircraft.type || 'N/A';
@@ -273,37 +302,87 @@
             }
         }
 
-        // NOVO: Função para configurar o filtro da tabela
+        // Função para configurar o filtro da tabela
         function setupTableFilter() {
             const input = document.getElementById("tableFilter");
-            const table = document.getElementById("aircraftTable");
-            const tr = table.getElementsByTagName("tr");
-
             input.addEventListener("keyup", function() {
-                const filter = input.value.toUpperCase(); // Converte para maiúsculas para comparação sem distinção de maiúsculas/minúsculas
-
-                // Começa do índice 1 para ignorar o cabeçalho da tabela (thead)
-                for (let i = 1; i < tr.length; i++) {
-                    let rowVisible = false;
-                    const td = tr[i].getElementsByTagName("td"); // Obtém todas as células da linha
-
-                    // Itera sobre todas as células da linha
-                    for (let j = 0; j < td.length; j++) {
-                        const cell = td[j];
-                        if (cell) {
-                            const cellText = cell.textContent || cell.innerText; // Obtém o texto da célula
-                            if (cellText.toUpperCase().indexOf(filter) > -1) {
-                                rowVisible = true;
-                                break; // Se encontrar o texto em uma célula, a linha é visível
-                            }
-                        }
-                    }
-                    tr[i].style.display = rowVisible ? "" : "none"; // Mostra ou esconde a linha
-                }
+                applyFiltersAndSort(); // Re-aplica filtros e ordenação
             });
         }
 
-        // 3. Função para buscar dados da API
+        // NOVO: Função para configurar a ordenação da tabela
+        function setupTableSorting() {
+            const headers = document.querySelectorAll("#aircraftTable th");
+            headers.forEach(header => {
+                header.addEventListener("click", function() {
+                    const column = this.getAttribute("data-column");
+
+                    // Reseta as setas dos outros cabeçalhos
+                    headers.forEach(h => {
+                        if (h !== this) {
+                            h.classList.remove('sort-asc', 'sort-desc');
+                        }
+                    });
+
+                    // Define a direção da ordenação
+                    if (currentSortColumn === column) {
+                        currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        currentSortColumn = column;
+                        currentSortDirection = 'asc'; // Padrão ao clicar numa nova coluna
+                    }
+
+                    // Adiciona as classes para as setas
+                    this.classList.remove('sort-asc', 'sort-desc'); // Remove para evitar duplicidade
+                    this.classList.add(`sort-${currentSortDirection}`);
+
+                    applyFiltersAndSort();
+                });
+            });
+        }
+
+        // NOVO: Função para aplicar filtros E ordenação
+        function applyFiltersAndSort() {
+            let filteredData = [...allAircraftData]; // Cria uma cópia para não modificar os dados originais
+
+            // 1. Aplicar filtro
+            const filterText = document.getElementById("tableFilter").value.toUpperCase();
+            if (filterText) {
+                filteredData = filteredData.filter(aircraft => {
+                    // Verifica se o texto do filtro está em qualquer uma das colunas visíveis
+                    return (aircraft.hex && String(aircraft.hex).toUpperCase().includes(filterText)) ||
+                           (aircraft.type && String(aircraft.type).toUpperCase().includes(filterText)) ||
+                           (aircraft.flight && String(aircraft.flight).toUpperCase().includes(filterText)) ||
+                           (aircraft.r && String(aircraft.r).toUpperCase().includes(filterText)) ||
+                           (aircraft.t && String(aircraft.t).toUpperCase().includes(filterText)) ||
+                           (aircraft.alt_baro && String(aircraft.alt_baro).toUpperCase().includes(filterText));
+                });
+            }
+
+            // 2. Aplicar ordenação
+            if (currentSortColumn) {
+                filteredData.sort((a, b) => {
+                    const valA = a[currentSortColumn];
+                    const valB = b[currentSortColumn];
+
+                    // Tratamento para valores numéricos (ex: altitude)
+                    if (!isNaN(parseFloat(valA)) && !isNaN(parseFloat(valB)) && typeof valA !== 'string' && typeof valB !== 'string') {
+                        return currentSortDirection === 'asc' ? parseFloat(valA) - parseFloat(valB) : parseFloat(valB) - parseFloat(valA);
+                    } else {
+                        // Ordenação de string (case-insensitive)
+                        const strA = String(valA || '').toUpperCase();
+                        const strB = String(valB || '').toUpperCase();
+                        if (strA < strB) return currentSortDirection === 'asc' ? -1 : 1;
+                        if (strA > strB) return currentSortDirection === 'asc' ? 1 : -1;
+                        return 0;
+                    }
+                });
+            }
+
+            displayAircrafts(filteredData);
+        }
+
+        // Função para buscar dados da API
         async function fetchAircraftData() {
             const tableBody = document.getElementById('aircraftTable').getElementsByTagName('tbody')[0];
             tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center;">Carregando dados...</td></tr>`;
@@ -326,9 +405,11 @@
                 console.log("Dados recebidos da API:", data);
 
                 if (data && data.ac) {
-                    displayAircrafts(data.ac);
+                    allAircraftData = data.ac; // Armazena os dados brutos
+                    applyFiltersAndSort(); // Aplica o filtro e a ordenação iniciais
                 } else {
                     console.warn("API retornou dados em formato inesperado ou sem a propriedade 'ac':", data);
+                    allAircraftData = [];
                     displayAircrafts([]);
                 }
 
@@ -338,11 +419,11 @@
             }
         }
 
-        // Chamar a função para buscar dados da API quando a página carregar
+        // Chamar as funções quando a página carregar
         if (map) {
             fetchAircraftData();
-            setupTableFilter(); // NOVO: Chama a função para configurar o filtro
-            // setInterval(fetchAircraftData, 30000); // Para atualizar dados periodicamente
+            setupTableFilter();
+            setupTableSorting(); // NOVO: Chama a função para configurar a ordenação
         }
     </script>
 </body>
