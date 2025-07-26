@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Informações de Aeronaves com Mapa</title>
+    <title>Informações de Aeronaves com Mapa - API RapidAPI</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <style>
         body {
@@ -112,69 +112,121 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Dados das aeronaves (você pode substituir isso por uma chamada fetch para uma API real)
-        const aircraftData = {
-            "ac": [
-                { "hex": "a4c2ad", "type": "adsc", "flight": "JBU2260 ", "r": "N4058J", "t": "A21N", "alt_baro": 32000, "track": 301.65, "lat": 44.116699, "lon": -17.7167, "nic": 0, "rc": 0, "seen_pos": 341.35, "mlat": [], "tisb": [], "messages": 92289963, "seen": 341.4, "rssi": -49.5 }
-            ]
-        };
+        // *** IMPORTANTE: Substitua estes valores pelas suas credenciais RapidAPI ***
+        const RAPIDAPI_KEY = 'dbcf86698cmshd04b1b46934dd15p11474ejsn267bbdb81678'; // <-- Substitua AQUI
+        const RAPIDAPI_HOST = 'aircraftscatter.p.rapidapi.com'; // <-- Substitua AQUI (ex: aircraftscatter.p.rapidapi.com)
+
+        // URL da API que você forneceu, com latitude e longitude de Oeiras
+        const API_URL = 'https://aircraftscatter.p.rapidapi.com/lat/38.6892887/lon/-9.311829/';
 
         // 1. Inicializar o Mapa Leaflet
+        let map;
+        let aircraftMarkers;
+
         if (document.getElementById('map')) {
-            const map = L.map('map').setView([0, 0], 2); // Centraliza em 0,0 com zoom 2 (mundial)
+            map = L.map('map').setView([38.6892887, -9.311829], 10); // Centraliza em Oeiras com zoom apropriado
 
             L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             }).addTo(map);
 
-            // CORREÇÃO AQUI: Usar L.featureGroup() em vez de L.layerGroup()
-            const aircraftMarkers = L.featureGroup().addTo(map);
+            aircraftMarkers = L.featureGroup().addTo(map);
+        } else {
+            console.error("Elemento 'map' não encontrado. Certifique-se de que a div com id='map' existe no HTML.");
+        }
 
-            // 2. Função para exibir os dados na tabela e no mapa
-            function displayAircrafts(aircrafts) {
-                const tableBody = document.getElementById('aircraftTable').getElementsByTagName('tbody')[0];
-                tableBody.innerHTML = ''; // Limpa a tabela antes de adicionar novos dados
-                aircraftMarkers.clearLayers(); // Limpa os marcadores existentes no mapa
+        // 2. Função para exibir os dados na tabela e no mapa
+        function displayAircrafts(aircrafts) {
+            const tableBody = document.getElementById('aircraftTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = ''; // Limpa a tabela antes de adicionar novos dados
+            aircraftMarkers.clearLayers(); // Limpa os marcadores existentes no mapa
 
-                aircrafts.forEach(aircraft => {
-                    // Adicionar linha à tabela
-                    const row = tableBody.insertRow();
-                    row.insertCell().textContent = aircraft.hex || 'N/A';
-                    row.insertCell().textContent = aircraft.type || 'N/A';
-                    row.insertCell().textContent = aircraft.flight || 'N/A';
-                    row.insertCell().textContent = aircraft.r || 'N/A';
-                    row.insertCell().textContent = aircraft.t || 'N/A';
-                    row.insertCell().textContent = aircraft.alt_baro || 'N/A';
-                    row.insertCell().textContent = aircraft.track || 'N/A';
-                    row.insertCell().textContent = aircraft.lat || 'N/A';
-                    row.insertCell().textContent = aircraft.lon || 'N/A';
-                    row.insertCell().textContent = aircraft.messages || 'N/A';
-                    row.insertCell().textContent = aircraft.seen_pos || 'N/A';
-                    row.insertCell().textContent = aircraft.rssi || 'N/A';
+            if (!aircrafts || aircrafts.length === 0) {
+                const row = tableBody.insertRow();
+                const cell = row.insertCell();
+                cell.colSpan = 12; // Número de colunas na sua tabela
+                cell.textContent = "Nenhuma aeronave encontrada na área.";
+                cell.style.textAlign = "center";
+                return; // Sai da função se não houver aeronaves
+            }
 
-                    // Adicionar marcador ao mapa, se lat e lon estiverem disponíveis
-                    if (aircraft.lat && aircraft.lon) {
-                        const marker = L.marker([aircraft.lat, aircraft.lon]).addTo(aircraftMarkers);
-                        marker.bindPopup(`
-                            <b>Voo:</b> ${aircraft.flight || 'N/A'}<br>
-                            <b>Registro:</b> ${aircraft.r || 'N/A'}<br>
-                            <b>Altitude:</b> ${aircraft.alt_baro || 'N/A'} ft
-                        `);
+            aircrafts.forEach(aircraft => {
+                // Adicionar linha à tabela
+                const row = tableBody.insertRow();
+                row.insertCell().textContent = aircraft.hex || 'N/A';
+                row.insertCell().textContent = aircraft.type || 'N/A';
+                row.insertCell().textContent = aircraft.flight || 'N/A';
+                row.insertCell().textContent = aircraft.r || 'N/A';
+                row.insertCell().textContent = aircraft.t || 'N/A';
+                row.insertCell().textContent = aircraft.alt_baro || 'N/A';
+                row.insertCell().textContent = aircraft.track || 'N/A';
+                row.insertCell().textContent = aircraft.lat || 'N/A';
+                row.insertCell().textContent = aircraft.lon || 'N/A';
+                row.insertCell().textContent = aircraft.messages || 'N/A';
+                row.insertCell().textContent = aircraft.seen_pos || 'N/A';
+                row.insertCell().textContent = aircraft.rssi || 'N/A';
+
+                // Adicionar marcador ao mapa, se lat e lon estiverem disponíveis
+                if (map && aircraft.lat && aircraft.lon) { // Verifica se 'map' foi inicializado
+                    const marker = L.marker([aircraft.lat, aircraft.lon]).addTo(aircraftMarkers);
+                    marker.bindPopup(`
+                        <b>Voo:</b> ${aircraft.flight || 'N/A'}<br>
+                        <b>Registro:</b> ${aircraft.r || 'N/A'}<br>
+                        <b>Altitude:</b> ${aircraft.alt_baro || 'N/A'} ft
+                        <br>
+                        <a href="https://flightaware.com/live/flight/${aircraft.flight ? aircraft.flight.trim() : ''}" target="_blank">Ver no FlightAware</a>
+                    `);
+                }
+            });
+
+            // Ajustar o mapa para mostrar todos os marcadores, se houver algum
+            if (map && aircraftMarkers.getLayers().length > 0) {
+                map.fitBounds(aircraftMarkers.getBounds(), { padding: [50, 50] }); // Adiciona um padding para melhor visualização
+            }
+        }
+
+        // 3. Função para buscar dados da API
+        async function fetchAircraftData() {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'GET',
+                    headers: {
+                        'X-RapidAPI-Key': RAPIDAPI_KEY,
+                        'X-RapidAPI-Host': RAPIDAPI_HOST
                     }
                 });
 
-                // Ajustar o mapa para mostrar todos os marcadores, se houver algum
-                // Esta linha agora deve funcionar corretamente com L.featureGroup
-                if (aircraftMarkers.getLayers().length > 0) {
-                    map.fitBounds(aircraftMarkers.getBounds());
+                if (!response.ok) {
+                    // Tenta ler a mensagem de erro da API, se disponível
+                    const errorText = await response.text();
+                    throw new Error(`Erro HTTP! Status: ${response.status}, Mensagem: ${errorText}`);
                 }
-            }
 
-            // Chamar a função para exibir os dados assim que o script for carregado
-            displayAircrafts(aircraftData.ac);
-        } else {
-            console.error("Elemento 'map' não encontrado. Certifique-se de que a div com id='map' existe no HTML.");
+                const data = await response.json();
+                console.log("Dados recebidos da API:", data); // Para depuração
+
+                // A API retorna um objeto com uma propriedade 'ac' que é um array de aeronaves
+                if (data && data.ac) {
+                    displayAircrafts(data.ac);
+                } else {
+                    console.warn("API retornou dados em formato inesperado ou sem a propriedade 'ac':", data);
+                    displayAircrafts([]); // Exibe uma tabela vazia se o formato for inesperado
+                }
+
+            } catch (error) {
+                console.error('Erro ao buscar dados da API:', error);
+                const tableBody = document.getElementById('aircraftTable').getElementsByTagName('tbody')[0];
+                tableBody.innerHTML = `<tr><td colspan="12" style="text-align: center; color: red;">Erro ao carregar dados: ${error.message}. Verifique sua chave/host da API.</td></tr>`;
+            }
+        }
+
+        // Chamar a função para buscar dados da API quando a página carregar
+        if (map) { // Só busca dados se o mapa foi inicializado com sucesso
+            fetchAircraftData();
+
+            // Opcional: Atualizar dados a cada 30 segundos
+            // setInterval(fetchAircraftData, 30000);
         }
     </script>
 </body>
