@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Informações de Aeronaves com Mapa</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-     integrity="sha256-p4NxAoJBhIIN+hmNHrzxH1pfMma6cyNbyisY/IT+MkQ="
-     crossorigin=""/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -43,7 +41,7 @@
             background-color: #fff;
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 0 10px rgba{0, 0, 0, 0.1};
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             overflow-x: auto; /* Permite scroll horizontal na tabela se necessário */
             min-width: 300px; /* Largura mínima para a tabela */
         }
@@ -114,9 +112,7 @@
         </div>
     </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-     integrity="sha256-A8Rk2Jz773eN6S2yE7z1v2M12K7oF7G4xW/eD7uV0g="
-     crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         // Dados das aeronaves (você pode substituir isso por uma chamada fetch para uma API real)
         const aircraftData = { "ac": [ { "hex": "a4c2ad", "type": "adsc", "flight": "JBU2260 ", "r": "N4058J", "t": "A21N", "alt_baro": 32000, "track": 301.65, "lat": 44.116699, "lon": -17.7167, "nic": 0, "rc": 0, "seen_pos": 341.35, "mlat": [], "tisb": [], "messages": 92289963, "seen": 341.4, "rssi": -49.5 }]};
@@ -152,27 +148,4 @@
                 row.insertCell().textContent = aircraft.lon || 'N/A';
                 row.insertCell().textContent = aircraft.messages || 'N/A';
                 row.insertCell().textContent = aircraft.seen_pos || 'N/A';
-                row.insertCell().textContent = aircraft.rssi || 'N/A';
-
-                // Adicionar marcador ao mapa, se lat e lon estiverem disponíveis
-                if (aircraft.lat && aircraft.lon) {
-                    const marker = L.marker([aircraft.lat, aircraft.lon]).addTo(aircraftMarkers);
-                    marker.bindPopup(`
-                        <b>Voo:</b> ${aircraft.flight || 'N/A'}<br>
-                        <b>Registro:</b> ${aircraft.r || 'N/A'}<br>
-                        <b>Altitude:</b> ${aircraft.alt_baro || 'N/A'} ft
-                    `);
-                }
-            });
-
-            // Ajustar o mapa para mostrar todos os marcadores, se houver algum
-            if (aircraftMarkers.getLayers().length > 0) {
-                map.fitBounds(aircraftMarkers.getBounds());
-            }
-        }
-
-        // Chamar a função para exibir os dados assim que o script for carregado
-        displayAircrafts(aircraftData.ac);
-    </script>
-</body>
-</html>
+                row.insertCell().textContent = aircraft.rssi || 'N/
