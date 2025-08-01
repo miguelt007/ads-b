@@ -366,6 +366,7 @@
                         <b>Rumo:</b> ${aircraft.track || 'N/A'}°<br>
                         <b>Última Posição:</b> ${aircraft.seen_pos || 'N/A'} s<br>
                         <b>GS (kts):</b> ${aircraft.gs || 'N/A'}<br>
+                        <b>Source:</b> ${aircraft.type || 'N/A'}<br>
                         <br><a href="https://flightaware.com/live/flight/${aircraft.flight ? aircraft.flight.trim() : ''}" target="_blank">Ver no FlightAware</a>
                     `);
                 }
